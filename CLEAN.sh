@@ -18,6 +18,7 @@ rm -f missing
 rm -f Makefile.in
 rm -f config.h.in~
 rm -f config.h.in
+rm -f INSTALL
 
 # Clean up Makefiles and related files
 echo "Cleaning Makefiles..."
@@ -29,10 +30,7 @@ echo "Cleaning auto-generated directories..."
 rm -rf autom4te.cache
 rm -rf .deps
 rm -rf .libs
-
-# Remove pkgconfig files
-echo "Cleaning pkgconfig files..."
-rm -rf pkgconfig
+rm -rf m4
 
 # Remove any other temporary files or directories as needed
 # Add additional clean-up commands here if necessary
