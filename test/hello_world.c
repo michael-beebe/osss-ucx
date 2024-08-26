@@ -1,9 +1,7 @@
-#include "/home/mbeebe/sw/el9-x86_64/osss-ucx/include/shmem.h"
-#include "/home/mbeebe/sw/el9-x86_64/osss-ucx/include/shmem/defs.h"
+#include "../build/build/include/shmem.h"
+#include "../build/build/include/shmem/defs.h"
 
 #include <stdio.h>
-
-// #include <shmem.h>
 
 int main(int argc, char *argv[]) {
   shmem_init();
