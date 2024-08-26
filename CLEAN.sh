@@ -19,6 +19,7 @@ rm -f Makefile.in
 rm -f config.h.in~
 rm -f config.h.in
 rm -f INSTALL
+rm -f COPYING
 
 # Clean up Makefiles and related files
 echo "Cleaning Makefiles..."
