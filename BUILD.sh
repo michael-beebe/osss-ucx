@@ -22,16 +22,21 @@ echo ; echo
 echo $HLINE
 echo "            CONFIGURING"
 echo $HLINE
+
+PREFIX="$(pwd)/build"
+# PREFIX=$OSSS_DIR
+
+export SHMEM_LAUNCHER="$OMPI_BIN/mpiexec"
+
 ../configure \
-  --prefix=$OSSS_DIR \
+  --prefix=$PREFIX \
   --with-pmix=$PMIX_DIR \
   --with-ucx=$UCX_DIR \
   --with-shcoll=$SHCOLL_DIR \
   --enable-debug \
   --enable-logging \
   --enable-aligned-addresses \
-  --with-heap-size=10G \
-  --with-launcher=$OMPI_BIN/mpiexec
+  --with-heap-size=10G
 
 # ---  Compile
 echo $HLINE
