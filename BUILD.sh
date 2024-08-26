@@ -1,52 +1,42 @@
 #!/bin/bash
 
-# Clean up generated files
-rm -rf \
-  build \
-  m4 \
-  autom4te.cache \
-  config.h.in \
-  config.guess \
-  config.sub \
-  configure \
-  depcomp \
-  install-sh \
-  ltmain.sh \
-  missing
+HLINE="--------------------------------------------"
 
-# Ensure pkgconfig directory and files exist
-mkdir -p pkgconfig
+# --- Clean up generated files
+echo $HLINE
+echo "            CLEANING BUILD"
+echo $HLINE
+./CLEAN.sh
+echo ; echo
 
-# Check and create pkgconfig/osss-ucx.pc.in if it doesn't exist
-if [ ! -f pkgconfig/osss-ucx.pc.in ]; then
-  cat <<EOF >pkgconfig/osss-ucx.pc.in
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-includedir=@includedir@
-
-Name: OSSS-UCX
-Description: OSSS-UCX library
-Version: 1.0.0
-Libs: -L\${libdir} -losss-ucx
-Cflags: -I\${includedir}
-EOF
-fi
-
-# Ensure configure.ac references pkgconfig files
-grep -qxF 'AC_CONFIG_FILES([pkgconfig/Makefile])' configure.ac || echo 'AC_CONFIG_FILES([pkgconfig/Makefile])' >>configure.ac
-grep -qxF 'AC_CONFIG_FILES([pkgconfig/osss-ucx.pc])' configure.ac || echo 'AC_CONFIG_FILES([pkgconfig/osss-ucx.pc])' >>configure.ac
-
-# Run autogen and configure
+# --- Run autogen and configure
+echo $HLINE
+echo "            RUNNING AUTOGEN"
+echo $HLINE
 mkdir build
 ./autogen.sh
 cd build
+echo ; echo
 
+# --- Configure build
+echo $HLINE
+echo "            CONFIGURING"
+echo $HLINE
 ../configure \
+  --prefix=$OSSS_DIR \
   --with-pmix=$PMIX_DIR \
   --with-ucx=$UCX_DIR \
   --with-shcoll=$SHCOLL_DIR \
-  --with-heap-size=10G #\
-# --with-launcher=`which mpirun`
+  --enable-debug \
+  --enable-logging \
+  --enable-aligned-addresses \
+  --with-heap-size=10G \
+  --with-launcher=$OMPI_BIN/mpiexec
 
-make -j 50
+# ---  Compile
+echo $HLINE
+echo "            COMPILING"
+echo $HLINE
+make -j 50 install
+
+
