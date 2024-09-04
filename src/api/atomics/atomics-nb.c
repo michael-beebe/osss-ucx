@@ -13,11 +13,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/*
+/* ------------------------------------------------------------------------ */
  * -- context-free
- */
+ * These macros define atomic operations without requiring a SHMEM context.
+ /* ------------------------------------------------------------------------ */
 
 #define API_DEF_CONST_AMO1_NBI(_op, _name, _type)                       \
+    /* Defines atomic non-blocking operations without context */        \
     void shmem_##_name##_atomic_##_op##_nbi(_type *fetch,               \
                                             const _type *target,        \
                                             int pe)                     \
@@ -28,9 +30,10 @@
     }
 
 #define API_DEF_AMO1_NBI(_op, _name, _type)                             \
+    /* Defines atomic non-blocking operations with a type and context */ \
     void shmem_##_name##_atomic_##_op##_nbi(_type *fetch,               \
-                                      _type *target,                    \
-                                      int pe)                           \
+                                            _type *target,              \
+                                            int pe)                     \
     {                                                                   \
         shmem_ctx_##_name##_atomic_##_op##_nbi(SHMEM_CTX_DEFAULT,       \
                                                fetch,                   \
@@ -38,6 +41,7 @@
     }
 
 #define API_DEF_AMO2_NBI(_op, _name, _type)                             \
+    /* Defines atomic non-blocking operations that also take a value */ \
     void shmem_##_name##_atomic_##_op##_nbi(_type *fetch,               \
                                             _type *target, _type value, \
                                             int pe)                     \
@@ -48,6 +52,7 @@
     }
 
 #ifdef ENABLE_PSHMEM
+/* Enable weak symbols for PSHMEM (parallel SHMEM) compatibility */
 #pragma weak shmem_int_atomic_fetch_nbi = pshmem_int_atomic_fetch_nbi
 #define shmem_int_atomic_fetch_nbi pshmem_int_atomic_fetch_nbi
 #pragma weak shmem_long_atomic_fetch_nbi = pshmem_long_atomic_fetch_nbi
@@ -78,6 +83,7 @@
 #define shmem_ptrdiff_atomic_fetch_nbi pshmem_ptrdiff_atomic_fetch_nbi
 #endif /* ENABLE_PSHMEM */
 
+/* Generate atomic non-blocking fetch operations for different types */
 API_DEF_CONST_AMO1_NBI(fetch, float, float)
 API_DEF_CONST_AMO1_NBI(fetch, double, double)
 API_DEF_CONST_AMO1_NBI(fetch, int, int)
@@ -94,6 +100,7 @@ API_DEF_CONST_AMO1_NBI(fetch, size, size_t)
 API_DEF_CONST_AMO1_NBI(fetch, ptrdiff, ptrdiff_t)
 
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for fetch and increment operations */
 #pragma weak shmem_int_atomic_fetch_inc_nbi = pshmem_int_atomic_fetch_inc_nbi
 #define shmem_int_atomic_fetch_inc_nbi pshmem_int_atomic_fetch_inc_nbi
 #pragma weak shmem_long_atomic_fetch_inc_nbi = pshmem_long_atomic_fetch_inc_nbi
@@ -120,6 +127,7 @@ API_DEF_CONST_AMO1_NBI(fetch, ptrdiff, ptrdiff_t)
 #define shmem_ptrdiff_atomic_fetch_inc_nbi pshmem_ptrdiff_atomic_fetch_inc_nbi
 #endif /* ENABLE_PSHMEM */
 
+/* Define non-blocking fetch-and-increment operations for various types */
 API_DEF_AMO1_NBI(fetch_inc, int, int)
 API_DEF_AMO1_NBI(fetch_inc, long, long)
 API_DEF_AMO1_NBI(fetch_inc, longlong, long long)
@@ -134,6 +142,7 @@ API_DEF_AMO1_NBI(fetch_inc, size, size_t)
 API_DEF_AMO1_NBI(fetch_inc, ptrdiff, ptrdiff_t)
 
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for fetch-and-add operations */
 #pragma weak shmem_int_atomic_fetch_add_nbi = pshmem_int_atomic_fetch_add_nbi
 #define shmem_int_atomic_fetch_add_nbi pshmem_int_atomic_fetch_add_nbi
 #pragma weak shmem_long_atomic_fetch_add_nbi = pshmem_long_atomic_fetch_add_nbi
@@ -160,6 +169,7 @@ API_DEF_AMO1_NBI(fetch_inc, ptrdiff, ptrdiff_t)
 #define shmem_ptrdiff_atomic_fetch_add_nbi pshmem_ptrdiff_atomic_fetch_add_nbi
 #endif /* ENABLE_PSHMEM */
 
+/* Define atomic fetch-and-add operations for different types */
 API_DEF_AMO2_NBI(fetch_add, int, int)
 API_DEF_AMO2_NBI(fetch_add, long, long)
 API_DEF_AMO2_NBI(fetch_add, longlong, long long)
@@ -174,6 +184,7 @@ API_DEF_AMO2_NBI(fetch_add, size, size_t)
 API_DEF_AMO2_NBI(fetch_add, ptrdiff, ptrdiff_t)
 
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for bitwise atomic operations */
 #pragma weak shmem_uint_atomic_fetch_xor = pshmem_uint_atomic_fetch_xor
 #define shmem_uint_atomic_fetch_xor pshmem_uint_atomic_fetch_xor
 #pragma weak shmem_ulong_atomic_fetch_xor = pshmem_ulong_atomic_fetch_xor
@@ -220,6 +231,7 @@ API_DEF_AMO2_NBI(fetch_add, ptrdiff, ptrdiff_t)
 #define shmem_uint64_atomic_fetch_and pshmem_uint64_atomic_fetch_and
 #endif /* ENABLE_PSHMEM */
 
+/* Define atomic fetch-XOR operations */
 API_DEF_AMO2_NBI(fetch_xor, uint, unsigned int)
 API_DEF_AMO2_NBI(fetch_xor, ulong, unsigned long)
 API_DEF_AMO2_NBI(fetch_xor, ulonglong, unsigned long long)
@@ -228,6 +240,7 @@ API_DEF_AMO2_NBI(fetch_xor, int64, int64_t)
 API_DEF_AMO2_NBI(fetch_xor, uint32, uint32_t)
 API_DEF_AMO2_NBI(fetch_xor, uint64, uint64_t)
 
+/* Define atomic fetch-OR operations */
 API_DEF_AMO2_NBI(fetch_or, uint, unsigned int)
 API_DEF_AMO2_NBI(fetch_or, ulong, unsigned long)
 API_DEF_AMO2_NBI(fetch_or, ulonglong, unsigned long long)
@@ -236,6 +249,7 @@ API_DEF_AMO2_NBI(fetch_or, int64, int64_t)
 API_DEF_AMO2_NBI(fetch_or, uint32, uint32_t)
 API_DEF_AMO2_NBI(fetch_or, uint64, uint64_t)
 
+/* Define atomic fetch-AND operations */
 API_DEF_AMO2_NBI(fetch_and, uint, unsigned int)
 API_DEF_AMO2_NBI(fetch_and, ulong, unsigned long)
 API_DEF_AMO2_NBI(fetch_and, ulonglong, unsigned long long)
@@ -245,6 +259,7 @@ API_DEF_AMO2_NBI(fetch_and, uint32, uint32_t)
 API_DEF_AMO2_NBI(fetch_and, uint64, uint64_t)
 
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for fetch-and-add operations with contexts */
 #pragma weak shmem_ctx_int_atomic_fetch_add_nbi = pshmem_ctx_int_atomic_fetch_add_nbi
 #define shmem_ctx_int_atomic_fetch_add_nbi pshmem_ctx_int_atomic_fetch_add_nbi
 #pragma weak shmem_ctx_long_atomic_fetch_add_nbi = pshmem_ctx_long_atomic_fetch_add_nbi
@@ -271,15 +286,11 @@ API_DEF_AMO2_NBI(fetch_and, uint64, uint64_t)
 #define shmem_ctx_ptrdiff_atomic_fetch_add_nbi pshmem_ctx_ptrdiff_atomic_fetch_add_nbi
 #endif /* ENABLE_PSHMEM */
 
-/*
- * fetch-and-add
- */
-
+/* Define fetch-and-add operations for contexts */
 #undef SHMEM_CTX_TYPE_FADD_NBI
 
-
-
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for fetch-and-increment operations with contexts */
 #pragma weak shmem_ctx_int_atomic_fetch_inc_nbi = pshmem_ctx_int_atomic_fetch_inc_nbi
 #define shmem_ctx_int_atomic_fetch_inc_nbi pshmem_ctx_int_atomic_fetch_inc_nbi
 #pragma weak shmem_ctx_long_atomic_fetch_inc_nbi = pshmem_ctx_long_atomic_fetch_inc_nbi
@@ -306,20 +317,13 @@ API_DEF_AMO2_NBI(fetch_and, uint64, uint64_t)
 #define shmem_ctx_ptrdiff_atomic_fetch_inc_nbi pshmem_ctx_ptrdiff_atomic_fetch_inc_nbi
 #endif /* ENABLE_PSHMEM */
 
-/*
- * fetch-and-increment
- */
-
+/* Define fetch-and-increment operations for contexts */
 #undef SHMEM_CTX_TYPE_FINC_NBI
-
-
 
 #undef SHMEM_CTX_TYPE_FETCH_NBI
 
-
-
-
 #ifdef ENABLE_PSHMEM
+/* Weak definitions for fetch-XOR, OR, and AND operations with contexts */
 #pragma weak shmem_ctx_uint_atomic_fetch_xor_nbi = pshmem_ctx_uint_atomic_fetch_xor_nbi
 #define shmem_ctx_uint_atomic_fetch_xor_nbi pshmem_ctx_uint_atomic_fetch_xor_nbi
 #pragma weak shmem_ctx_ulong_atomic_fetch_xor_nbi = pshmem_ctx_ulong_atomic_fetch_xor_nbi
@@ -364,10 +368,7 @@ API_DEF_AMO2_NBI(fetch_and, uint64, uint64_t)
 #define shmem_ctx_uint64_atomic_fetch_and_nbi pshmem_ctx_uint64_atomic_fetch_and_nbi
 #endif /* ENABLE_PSHMEM */
 
-/*
- * fetch-bitwise NBI
- */
-
+/* Define fetch-bitwise operations */
 #define SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(_opname, _name, _type)         \
     void                                                                \
     shmem_ctx_##_name##_atomic_fetch_##_opname##_nbi(shmem_ctx_t ctx,   \
@@ -383,6 +384,7 @@ API_DEF_AMO2_NBI(fetch_and, uint64, uint64_t)
                                                           pe, fetch));  \
     }
 
+/* Atomic fetch-XOR bitwise operations */
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, uint, unsigned int)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, ulong, unsigned long)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, ulonglong, unsigned long long)
@@ -391,6 +393,7 @@ SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, int64, int64_t)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, uint32, uint32_t)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(xor, uint64, uint64_t)
 
+/* Atomic fetch-OR bitwise operations */
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, uint, unsigned int)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, ulong, unsigned long)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, ulonglong, unsigned long long)
@@ -399,6 +402,7 @@ SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, int64, int64_t)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, uint32, uint32_t)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(or, uint64, uint64_t)
 
+/* Atomic fetch-AND bitwise operations */
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(and, uint, unsigned int)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(and, ulong, unsigned long)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(and, ulonglong, unsigned long long)
@@ -408,3 +412,4 @@ SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(and, uint32, uint32_t)
 SHMEM_CTX_TYPE_FETCH_BITWISE_NBI(and, uint64, uint64_t)
 
 #undef SHMEM_CTX_TYPE_FETCH_BITWISE_NBI
+

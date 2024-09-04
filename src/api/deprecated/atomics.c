@@ -17,14 +17,30 @@
 /*
  * ---------------------------------------------------------------------
  *
- * Deprecations as of 1.4.  3 different macros for different parameter
- * counts.  Provide variants for return types.  This needs to match
- * deprecation information in the header file.
+ * Deprecations as of 1.4.  This file implements atomic operations that 
+ * were deprecated as of the OpenSHMEM 1.4 specification. These operations 
+ * have been replaced by atomic functions using a new naming convention.
+ *
+ * 3 different macros are defined for different parameter counts:
+ * - SHMEM_DEPRECATE_VOID_AMO1: for atomic operations with 1 parameter
+ * - SHMEM_DEPRECATE_VOID_AMO2: for atomic operations with 2 parameters
+ * - SHMEM_DEPRECATE_VOID_AMO3: for atomic operations with 3 parameters
+ *
+ * Each macro provides variants for different return types (e.g., void or 
+ * returning a value). The macros also ensure that any deprecated functions 
+ * log a deprecation warning and internally call the newer versions.
+ *
+ * This code also ensures that the deprecation information matches what's 
+ * documented in the OpenSHMEM header files.
  *
  */
 
-static const shmemu_version_t v = { .major = 1, .minor = 4 };
+static const shmemu_version_t v = { .major = 1, .minor = 4 };  /* Version 1.4, when these functions were deprecated */
 
+/* 
+ * Macro for deprecating atomic operations with 1 parameter (void return type).
+ * This macro maps the old atomic function to the new one and logs a deprecation warning.
+ */
 #define SHMEM_DEPRECATE_VOID_AMO1(_old, _new, _name, _type)             \
     void                                                                \
     shmem_##_name##_##_old(_type *target, int pe)                       \
@@ -33,6 +49,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         shmem_##_name##_atomic_##_new(target, pe);                      \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 2 parameters (void return type).
+ */
 #define SHMEM_DEPRECATE_VOID_AMO2(_old, _new, _name, _type)             \
     void                                                                \
     shmem_##_name##_##_old(_type *target, _type value, int pe)          \
@@ -41,6 +60,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         shmem_##_name##_atomic_##_new(target, value, pe);               \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 3 parameters (void return type).
+ */
 #define SHMEM_DEPRECATE_VOID_AMO3(_old, _new, _name, _type)             \
     void                                                                \
     shmem_##_name##_##_old(_type *target,                               \
@@ -51,6 +73,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         shmem_##_name##_atomic_##_new(target, cond, value, pe);         \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 1 parameter (returning a value).
+ */
 #define SHMEM_DEPRECATE_AMO1(_old, _new, _name, _type)     \
     _type                                                  \
     shmem_##_name##_##_old(_type *target, int pe)          \
@@ -59,6 +84,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         return shmem_##_name##_atomic_##_new(target, pe);  \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 1 parameter and a constant target (returning a value).
+ */
 #define SHMEM_DEPRECATE_CONST_AMO1(_old, _new, _name, _type)        \
     _type                                                           \
     shmem_##_name##_##_old(const _type *target, int pe)             \
@@ -67,6 +95,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         return shmem_##_name##_atomic_##_new(target, pe);           \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 2 parameters (returning a value).
+ */
 #define SHMEM_DEPRECATE_AMO2(_old, _new, _name, _type)                  \
     _type                                                               \
     shmem_##_name##_##_old(_type *target, _type value, int pe)          \
@@ -75,6 +106,9 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         return shmem_##_name##_atomic_##_new(target, value, pe);        \
     }
 
+/* 
+ * Macro for deprecating atomic operations with 3 parameters (returning a value).
+ */
 #define SHMEM_DEPRECATE_AMO3(_old, _new, _name, _type)                  \
     _type                                                               \
     shmem_##_name##_##_old(_type *target,                               \
@@ -85,6 +119,11 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
         return shmem_##_name##_atomic_##_new(target, cond, value, pe);  \
     }
 
+/*
+ * Weak symbols allow the PSHMEM (Profiling SHMEM) library to override
+ * these symbols if it's enabled at compile-time. This allows for instrumentation
+ * of SHMEM calls.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_set = pshmem_int_set
 #define shmem_int_set pshmem_int_set
@@ -98,12 +137,14 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
 #define shmem_double_set pshmem_double_set
 #endif /* ENABLE_PSHMEM */
 
+/* Deprecate the `shmem_*_set` functions */
 SHMEM_DEPRECATE_VOID_AMO2(set, set, int, int)
 SHMEM_DEPRECATE_VOID_AMO2(set, set, long, long)
 SHMEM_DEPRECATE_VOID_AMO2(set, set, longlong, long long)
 SHMEM_DEPRECATE_VOID_AMO2(set, set, float, float)
 SHMEM_DEPRECATE_VOID_AMO2(set, set, double, double)
 
+/* Deprecate the `shmem_*_inc` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_inc = pshmem_int_inc
 #define shmem_int_inc pshmem_int_inc
@@ -117,6 +158,7 @@ SHMEM_DEPRECATE_VOID_AMO1(inc, inc, int, int)
 SHMEM_DEPRECATE_VOID_AMO1(inc, inc, long, long)
 SHMEM_DEPRECATE_VOID_AMO1(inc, inc, longlong, long long)
 
+/* Deprecate the `shmem_*_add` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_add = pshmem_int_add
 #define shmem_int_add pshmem_int_add
@@ -130,6 +172,7 @@ SHMEM_DEPRECATE_VOID_AMO2(add, add, int, int)
 SHMEM_DEPRECATE_VOID_AMO2(add, add, long, long)
 SHMEM_DEPRECATE_VOID_AMO2(add, add, longlong, long long)
 
+/* Deprecate the `shmem_*_fetch` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_fetch = pshmem_int_fetch
 #define shmem_int_fetch pshmem_int_fetch
@@ -149,6 +192,7 @@ SHMEM_DEPRECATE_CONST_AMO1(fetch, fetch, longlong, long long)
 SHMEM_DEPRECATE_CONST_AMO1(fetch, fetch, float, float)
 SHMEM_DEPRECATE_CONST_AMO1(fetch, fetch, double, double)
 
+/* Deprecate the `shmem_*_finc` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_finc = pshmem_int_finc
 #define shmem_int_finc pshmem_int_finc
@@ -162,6 +206,7 @@ SHMEM_DEPRECATE_AMO1(finc, fetch_inc, int, int)
 SHMEM_DEPRECATE_AMO1(finc, fetch_inc, long, long)
 SHMEM_DEPRECATE_AMO1(finc, fetch_inc, longlong, long long)
 
+/* Deprecate the `shmem_*_fadd` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_fadd = pshmem_int_fadd
 #define shmem_int_fadd pshmem_int_fadd
@@ -175,6 +220,7 @@ SHMEM_DEPRECATE_AMO2(fadd, fetch_add, int, int)
 SHMEM_DEPRECATE_AMO2(fadd, fetch_add, long, long)
 SHMEM_DEPRECATE_AMO2(fadd, fetch_add, longlong, long long)
 
+/* Deprecate the `shmem_*_swap` functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_float_swap = pshmem_float_swap
 #define shmem_float_swap pshmem_float_swap
@@ -194,6 +240,7 @@ SHMEM_DEPRECATE_AMO2(swap, swap, longlong, long long)
 SHMEM_DEPRECATE_AMO2(swap, swap, float, float)
 SHMEM_DEPRECATE_AMO2(swap, swap, double, double)
 
+/* Deprecate the `shmem_*_cswap` (compare-swap) functions */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_int_cswap = pshmem_int_cswap
 #define shmem_int_cswap pshmem_int_cswap

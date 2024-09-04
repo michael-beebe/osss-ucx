@@ -1,14 +1,27 @@
 /* For license: see LICENSE file at top-level */
 
+/* 
+ * Include configuration header if available. 
+ * This ensures platform-specific configurations are applied.
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+/* 
+ * Include necessary SHMEM headers for mutex, utility functions, core SHMEM 
+ * functionality, and common definitions.
+ */
 #include "shmem_mutex.h"
 #include "shmemu.h"
 #include "shmemc.h"
 #include "common.h"
 
+/* 
+ * If ENABLE_PSHMEM is defined, create weak references for the context-based 
+ * non-blocking atomic fetch operations (AMO) for various data types.
+ * These allow the functions to be overridden by prefixed 'pshmem' versions.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_ctx_int_atomic_fetch_nbi = pshmem_ctx_int_atomic_fetch_nbi
 #define shmem_ctx_int_atomic_fetch_nbi pshmem_ctx_int_atomic_fetch_nbi
@@ -41,9 +54,13 @@
 #endif /* ENABLE_PSHMEM */
 
 /*
- * NB currently using blocking as first hack
+ * SHMEM_CTX_TYPE_FETCH_NBI:
+ * Defines the non-blocking fetch atomic operation for various data types. 
+ * The function fetches the value from a remote PE and stores it in `fetch`.
+ * 
+ * _name - The name of the data type (e.g., int, long)
+ * _type - The actual C data type (e.g., int, long)
  */
-
 #define SHMEM_CTX_TYPE_FETCH_NBI(_name, _type)                          \
     void                                                                \
     shmem_ctx_##_name##_atomic_fetch_nbi(shmem_ctx_t ctx,               \
@@ -57,6 +74,7 @@
                                                 fetch));                \
     }
 
+/* Instantiate the non-blocking fetch function for all required types */
 SHMEM_CTX_TYPE_FETCH_NBI(float, float)
 SHMEM_CTX_TYPE_FETCH_NBI(double, double)
 SHMEM_CTX_TYPE_FETCH_NBI(int, int)
@@ -72,6 +90,15 @@ SHMEM_CTX_TYPE_FETCH_NBI(uint64, uint64_t)
 SHMEM_CTX_TYPE_FETCH_NBI(size, size_t)
 SHMEM_CTX_TYPE_FETCH_NBI(ptrdiff, ptrdiff_t)
 
+/*
+ * API_DEF_CONST_AMO1_NBI:
+ * This macro defines the non-blocking atomic fetch operation for various data 
+ * types without context. It wraps the context-based operations defined above.
+ * 
+ * _op   - The operation (fetch)
+ * _name - The name of the data type (e.g., int, long)
+ * _type - The actual C data type (e.g., int, long)
+ */
 API_DEF_CONST_AMO1_NBI(fetch, float, float)
 API_DEF_CONST_AMO1_NBI(fetch, double, double)
 API_DEF_CONST_AMO1_NBI(fetch, int, int)

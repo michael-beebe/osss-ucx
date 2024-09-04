@@ -1,0 +1,62 @@
+#!/bin/sh
+# Emacs: -*- mode: sh -*-
+# For license: see LICENSE file at top-level
+
+compiler="${OSH_CC-gcc}"
+
+# Emacs: -*- mode: sh -*-
+# -- common footer -----------------------------------------------------
+# For license: see LICENSE file at top-level
+
+prog="`basename $0`"
+
+# trap empty command-line
+if [ $# -eq 0 ]
+then
+    cat <<EOF
+Usage: $prog [compiler flags] <input files...>
+EOF
+    exit 1
+fi
+
+prefix="/home/mbeebe/lanl/openshmem/osss/osss-ucx_cosmetic/build/build"
+exec_prefix="${prefix}"
+shmem_dir="/home/mbeebe/lanl/openshmem/osss/osss-ucx_cosmetic/build/build"
+shmem_include="${prefix}/include"
+shmem_lib="${exec_prefix}/lib"
+
+pmixlib_stanza="-L/home/mbeebe/sw/el9-x86_64/pmix/lib64 -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/pmix/lib64 -L/home/mbeebe/sw/el9-x86_64/pmix/lib -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/pmix/lib -lpmix"
+
+shmemlib_ldflags="-L$shmem_lib -Wl,-rpath -Wl,$shmem_lib"
+shmemlib_libs="-lshmem -lshmemc-ucx -lshmemu -lshmemt -lshmem-amo -lm"
+shmemlib_stanza="$shmemlib_ldflags $shmemlib_libs $pmixlib_stanza"
+
+#
+# find collectives library.  will either be picked up inside OSSS-UCX,
+# or require linking to external directory
+#
+shcoll_stanza=" -lshcoll"
+
+comms_stanza="-L/home/mbeebe/sw/el9-x86_64/ucx/lib64 -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/ucx/lib64 -L/home/mbeebe/sw/el9-x86_64/ucx/lib -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/ucx/lib -lucp"
+
+libs_stanza="$shmemlib_stanza $comms_stanza $shcoll_stanza"
+
+# check to see if linking required: if not, throw away link args
+#
+# TODO: yeah, this is hardwired for GCC-like flags
+#
+for c in $@
+do
+    case $c in
+        -[cES])
+            libs_stanza=""
+            ;;
+        *)
+            ;;
+    esac
+done
+
+pthreads_cflags="${OSH_PTHREADS_CFLAGS--pthread}"
+pthreads_libs="${OSH_PTHREADS_LIBS-}"
+
+$compiler -I$shmem_include $pthreads_cflags "$@" $libs_stanza $pthreads_libs

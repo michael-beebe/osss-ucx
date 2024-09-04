@@ -1,0 +1,51 @@
+.\" For license: see LICENSE file at top-level
+.TH osh_intro 1 "" "OSSS-UCX"
+.SH NAME
+\fBosh_intro\fP - Overview of OpenSHMEM programs
+.SH DESCRIPTION
+OpenSHMEM is a PGAS programming library that can use hardware
+capabilities such as RDMA for fast direct-to-memory communication in
+systems such as high performance computing clusters.
+.LP
+This manual page documents the commands associated with the Open
+Source Software Solutions (OSSS) Reference Implementation.
+.LP
+.SH TOOLS
+.IP COMPILERS
+.RS 2
+.IP "C" 4
+This is the core interface that is always present.
+C programs can be compiled/linked using oshcc(1).
+.IP "C++" 4
+If this interface has been enabled, C++ programs can be
+compiled/linked using oshcxx(1).
+.RE
+.IP LAUNCHER
+.RS 2
+In this implementation, OpenSHMEM programs can be launched via
+oshrun(1).  Job scheduling systems, such as PBS/Torque, SLURM, and
+LSF, may provide compatible launchers as well (e.g. srun in SLURM,
+aprun in ALPS).
+.RE
+.IP INFORMATION
+.RS 2
+.IP osh_info 2
+A utility that describes configuration settings of this
+implementation, osh_info(1).
+.RE
+.SH ENVIRONMENT
+.IP "pkg-config osss-ucx"
+If configured in the user's environment, this implementation can be
+queried by pkg-config(1).
+.SH SEE ALSO
+oshcc(1),
+.br
+oshcxx(1),
+.br
+oshrun(1),
+.br
+osh_info(1).
+.SH REFERENCES
+http://www.openshmem.org/
+.br
+http://www.pgas.org/

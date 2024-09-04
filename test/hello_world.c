@@ -12,6 +12,7 @@ int main(int argc, char *argv[]) {
     if (mype == i) {
       printf("Hello from PE %d out of %d PEs\n", mype, npes);
     }
+    shmem_quiet();
   }
 
   shmem_finalize();

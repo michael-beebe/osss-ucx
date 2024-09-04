@@ -1,14 +1,27 @@
 /* For license: see LICENSE file at top-level */
 
+/*
+ * Include the configuration header if available.
+ * This may contain platform-specific configurations.
+ */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+/*
+ * Include headers for mutexes, utility functions, core SHMEM operations,
+ * and common functionality shared across different SHMEM operations.
+ */
 #include "shmem_mutex.h"
 #include "shmemu.h"
 #include "shmemc.h"
 #include "common.h"
 
+/*
+ * If ENABLE_PSHMEM is defined, declare weak symbols for the context-based
+ * atomic swap non-blocking operations (NBI). This allows the 'pshmem' versions
+ * to override the default versions, if needed.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_ctx_float_atomic_swap_nbi = pshmem_ctx_float_atomic_swap_nbi
 #define shmem_ctx_float_atomic_swap_nbi pshmem_ctx_float_atomic_swap_nbi
@@ -40,6 +53,14 @@
 #define shmem_ctx_ptrdiff_atomic_swap_nbi pshmem_ctx_ptrdiff_atomic_swap_nbi
 #endif /* ENABLE_PSHMEM */
 
+/*
+ * SHMEM_CTX_TYPE_SWAP_NBI:
+ * Define the context-based atomic swap non-blocking operation (NBI) for a given data type.
+ * The function swaps a value atomically between the calling PE and a target PE.
+ * 
+ * _name  - The name of the data type (e.g., int, long)
+ * _type  - The actual C data type (e.g., int, long)
+ */
 #define SHMEM_CTX_TYPE_SWAP_NBI(_name, _type)                           \
     void                                                                \
     shmem_ctx_##_name##_atomic_swap_nbi(shmem_ctx_t ctx,                \
@@ -57,6 +78,7 @@
                                                pe, fetch));             \
     }
 
+/* Define context-based atomic swap non-blocking (NBI) operations for various data types */
 SHMEM_CTX_TYPE_SWAP_NBI(int, int)
 SHMEM_CTX_TYPE_SWAP_NBI(long, long)
 SHMEM_CTX_TYPE_SWAP_NBI(longlong, long long)
@@ -72,6 +94,15 @@ SHMEM_CTX_TYPE_SWAP_NBI(uint64, uint64_t)
 SHMEM_CTX_TYPE_SWAP_NBI(size, size_t)
 SHMEM_CTX_TYPE_SWAP_NBI(ptrdiff, ptrdiff_t)
 
+/*
+ * API_DEF_AMO2_NBI:
+ * Defines a non-context atomic swap non-blocking operation (NBI) for various data types.
+ * This function calls the context-based atomic swap non-blocking operation.
+ * 
+ * _op    - The operation (swap)
+ * _name  - The name of the data type (e.g., int, long)
+ * _type  - The actual C data type (e.g., int, long)
+ */
 API_DEF_AMO2_NBI(swap, float, float)
 API_DEF_AMO2_NBI(swap, double, double)
 API_DEF_AMO2_NBI(swap, int, int)

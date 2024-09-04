@@ -32,11 +32,19 @@ export SHMEM_LAUNCHER="$OMPI_BIN/mpiexec"
   --prefix=$PREFIX \
   --with-pmix=$PMIX_DIR \
   --with-ucx=$UCX_DIR \
-  --with-shcoll=$SHCOLL_DIR \
   --enable-debug \
   --enable-logging \
-  --enable-aligned-addresses \
   --with-heap-size=10G
+
+#../configure \
+#  --prefix=$PREFIX \
+#  --with-pmix=$PMIX_DIR \
+#  --with-ucx=$UCX_DIR \
+#  --with-shcoll=$SHCOLL_DIR \
+#  --enable-debug \
+#  --enable-logging \
+#  --enable-aligned-addresses \
+#  --with-heap-size=10G
 
 # ---  Compile
 echo $HLINE

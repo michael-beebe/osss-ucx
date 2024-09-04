@@ -1,5 +1,12 @@
 /* For license: see LICENSE file at top-level */
 
+/*
+ * This file defines a table-based registry system for the collective
+ * operations available in SHCOLL (SHMEM collectives). The operations are
+ * organized into tables of known algorithms for various collective
+ * operations like all-to-all, broadcast, and barrier.
+ */
+
 #include "shcoll.h"
 #include "table.h"
 
@@ -7,25 +14,37 @@
 #include <string.h>
 
 /*
- * construct table of known algorithms
+ * Macros for constructing tables of known algorithms.
+ *
+ * SIZED_REG - Registers algorithms that have both 32-bit and 64-bit versions.
+ * SIZED_LAST - Indicates the end of a sized operation table.
+ * UNSIZED_REG - Registers algorithms that are not size-dependent.
+ * UNSIZED_LAST - Indicates the end of an unsized operation table.
  */
 
 #define SIZED_REG(_type, _name)                 \
     { #_name,                                   \
             shcoll_##_type##32##_##_name,       \
             shcoll_##_type##64##_##_name }
+
 #define SIZED_LAST                              \
     { "", NULL, NULL }
+
 #define UNSIZED_REG(_type, _name)               \
     { #_name,                                   \
             shcoll_##_type##_##_name }
+
 #define UNSIZED_LAST                            \
     { "", NULL }
 
 /*
- * known implementations from SHCOLL
+ * These tables define the known implementations of various SHCOLL
+ * collective operations. Each table corresponds to a specific
+ * collective operation (e.g., broadcast, alltoall) and lists the
+ * available algorithms for that operation.
  */
 
+/* Broadcast algorithms */
 static sized_op_t
 broadcast_tab[] = {
     SIZED_REG(broadcast, linear),
@@ -37,6 +56,7 @@ broadcast_tab[] = {
     SIZED_LAST
 };
 
+/* All-to-all algorithms */
 static sized_op_t
 alltoall_tab[] = {
     SIZED_REG(alltoall, shift_exchange_barrier),
@@ -49,6 +69,7 @@ alltoall_tab[] = {
     SIZED_LAST
 };
 
+/* All-to-all strided algorithms */
 static sized_op_t
 alltoalls_tab[] = {
     SIZED_REG(alltoalls, shift_exchange_barrier),
@@ -66,6 +87,7 @@ alltoalls_tab[] = {
     SIZED_LAST
 };
 
+/* Collect algorithms */
 static sized_op_t
 collect_tab[] = {
     SIZED_REG(collect, linear),
@@ -79,6 +101,7 @@ collect_tab[] = {
     SIZED_LAST
 };
 
+/* Familiar collect algorithms */
 static sized_op_t
 fcollect_tab[] = {
     SIZED_REG(fcollect, linear),
@@ -94,6 +117,7 @@ fcollect_tab[] = {
     SIZED_LAST
 };
 
+/* Barrier_all algorithms (not size-dependent) */
 static unsized_op_t
 barrier_all_tab[] = {
     UNSIZED_REG(barrier_all, linear),
@@ -104,6 +128,7 @@ barrier_all_tab[] = {
     UNSIZED_LAST
 };
 
+/* Sync_all algorithms (not size-dependent) */
 static unsized_op_t
 sync_all_tab[] = {
     UNSIZED_REG(sync_all, linear),
@@ -114,6 +139,7 @@ sync_all_tab[] = {
     UNSIZED_LAST
 };
 
+/* Barrier algorithms (not size-dependent) */
 static unsized_op_t
 barrier_tab[] = {
     UNSIZED_REG(barrier, linear),
@@ -124,6 +150,7 @@ barrier_tab[] = {
     UNSIZED_LAST
 };
 
+/* Sync algorithms (not size-dependent) */
 static unsized_op_t
 sync_tab[] = {
     UNSIZED_REG(sync, linear),
@@ -135,12 +162,17 @@ sync_tab[] = {
 };
 
 /*
- * find the function(s) corresponding to the requested name.
+ * These functions search the tables defined above to find the
+ * corresponding function(s) for the requested algorithm name.
  *
- * return 0 if found, non-zero otherwise
- *
+ * If the requested algorithm is found, the function pointers
+ * are set and the function returns 0. Otherwise, it returns -1.
  */
 
+/*
+ * Search for a sized operation (e.g., 32-bit and 64-bit variants)
+ * and register the corresponding functions.
+ */
 static int
 register_sized(sized_op_t *tabp,
                const char *op,
@@ -159,6 +191,9 @@ register_sized(sized_op_t *tabp,
     return -1;
 }
 
+/*
+ * Search for an unsized operation and register the corresponding function.
+ */
 static int
 register_unsized(unsized_op_t *tabp,
                  const char *op,
@@ -177,14 +212,20 @@ register_unsized(unsized_op_t *tabp,
 }
 
 /*
- * global registry
+ * Global registry for collective operations.
+ * This structure holds function pointers for the different
+ * collective operations, allowing them to be dispatched
+ * based on the selected algorithm.
  */
 coll_ops_t colls;
 
 /*
- * given name, set up functions
+ * Macros to define registration functions for the different
+ * collective operations. These functions use the tables above
+ * to look up and register the appropriate functions.
  */
 
+/* Register sized collective operations (e.g., all-to-all, broadcast) */
 #define REGISTER_SIZED(_coll)                       \
     int                                             \
     register_##_coll(const char *name)              \
@@ -194,6 +235,7 @@ coll_ops_t colls;
                               &colls._coll.f64);    \
     }
 
+/* Register unsized collective operations (e.g., barrier, sync) */
 #define REGISTER_UNSIZED(_coll)                          \
     int                                                  \
     register_##_coll(const char *name)                   \
@@ -202,6 +244,7 @@ coll_ops_t colls;
                                 &colls._coll.f);         \
     }
 
+/* Define the registration functions for all collective operations */
 REGISTER_SIZED(alltoall)
 REGISTER_SIZED(alltoalls)
 REGISTER_SIZED(broadcast)
@@ -214,5 +257,5 @@ REGISTER_UNSIZED(sync)
 REGISTER_UNSIZED(sync_all)
 
 /*
- * TODO reductions
+ * TODO: Implement reductions
  */

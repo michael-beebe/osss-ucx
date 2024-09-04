@@ -10,6 +10,11 @@
 #include "common.h"
 
 #ifdef ENABLE_PSHMEM
+/* 
+ * Weak symbol declarations for the public SHMEM atomic AND routines. 
+ * These enable shared memory implementations across different platforms and compilers.
+ * Each type (uint, ulong, etc.) gets its own set of weak symbols.
+ */
 #pragma weak shmem_ctx_uint_atomic_and = pshmem_ctx_uint_atomic_and
 #define shmem_ctx_uint_atomic_and pshmem_ctx_uint_atomic_and
 #pragma weak shmem_ctx_ulong_atomic_and = pshmem_ctx_ulong_atomic_and
@@ -26,6 +31,11 @@
 #define shmem_ctx_uint64_atomic_and pshmem_ctx_uint64_atomic_and
 #endif /* ENABLE_PSHMEM */
 
+/* 
+ * SHMEM_CTX_TYPE_BITWISE defines atomic bitwise AND operations for 
+ * each type (e.g., uint, ulong) using the SHMEM context (ctx).
+ * The operation is applied to the `target` variable from a different processing element (pe).
+ */
 SHMEM_CTX_TYPE_BITWISE(and, uint, unsigned int)
 SHMEM_CTX_TYPE_BITWISE(and, ulong, unsigned long)
 SHMEM_CTX_TYPE_BITWISE(and, ulonglong, unsigned long long)
@@ -34,6 +44,11 @@ SHMEM_CTX_TYPE_BITWISE(and, int64, int64_t)
 SHMEM_CTX_TYPE_BITWISE(and, uint32, uint32_t)
 SHMEM_CTX_TYPE_BITWISE(and, uint64, uint64_t)
 
+/*
+ * API_DEF_VOID_AMO2 defines the SHMEM API for atomic AND operations 
+ * for the respective data types (e.g., uint, ulong).
+ * These functions do not return any value (void).
+ */
 API_DEF_VOID_AMO2(and, uint, unsigned int)
 API_DEF_VOID_AMO2(and, ulong, unsigned long)
 API_DEF_VOID_AMO2(and, ulonglong, unsigned long long)

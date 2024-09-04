@@ -75,7 +75,8 @@ MY_SOURCES            += \
 				deprecated/init.c \
 				deprecated/ranks.c \
 				deprecated/shmalloc.c \
-				deprecated/waituntil.c
+				deprecated/waituntil.c \
+				deprecated/collectives.c
 
 SUBDIRS                = 	atomics
 

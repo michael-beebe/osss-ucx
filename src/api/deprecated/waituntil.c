@@ -7,14 +7,23 @@
 #include "shmem_mutex.h"
 #include "shmemu.h"
 
-/**
- * deprecated @ 1.4
+/*
+ * Deprecated at OpenSHMEM version 1.4
  *
- * wait is just wait_until with inequality/change test
+ * This file implements deprecated wait routines. These wait routines
+ * (e.g., `shmem_int_wait()`) were simplified forms of the more 
+ * general `shmem_wait_until()` and checked for inequality or change.
+ * 
+ * The modern equivalents are non-blocking variants and use more general
+ * context-aware calls.
  */
 
 static const shmemu_version_t v = { .major = 1, .minor = 4 };
 
+/* 
+ * PSHMEM weak symbol declarations for profiling.
+ * This allows profiling tools to intercept calls to the deprecated wait routines.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_wait = pshmem_short_wait
 #define shmem_short_wait pshmem_short_wait
@@ -46,16 +55,41 @@ static const shmemu_version_t v = { .major = 1, .minor = 4 };
 #define shmem_ptrdiff_wait pshmem_ptrdiff_wait
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * Macro for defining deprecated wait routines. The wait routines block 
+ * until the value pointed to by `ivar` becomes unequal to `cmp_value`.
+ *
+ * `_name`: Type of the wait routine (e.g., short, int, long).
+ * `_type`: Data type associated with the routine (e.g., int32_t, uint64_t).
+ * `_size`: Bit size of the data type (e.g., 32, 64).
+ * 
+ * The macro defines functions like `shmem_int_wait()` and logs a 
+ * deprecation warning before calling the updated version.
+ */
 #define SHMEM_TYPE_WAIT(_name, _type, _size)                        \
     void                                                            \
     shmem_##_name##_wait(_type *ivar, _type cmp_value)              \
     {                                                               \
+        /* Log deprecation warning for the routine */               \
         deprecate(__func__, &v);                                    \
+                                                                    \
+        /* Call the newer version using a 16, 32, or 64-bit type */  \
         shmemc_ctx_wait_until_ne##_size(SHMEM_CTX_DEFAULT,          \
                                         (int##_size##_t *) ivar,    \
                                         cmp_value);                 \
     }
 
+/*
+ * Define deprecated wait functions for various data types (int, long, etc.).
+ * These functions wait until the value in `ivar` is not equal to `cmp_value`.
+ * 
+ * Examples:
+ * - `shmem_int_wait()` waits for a 32-bit integer.
+ * - `shmem_long_wait()` waits for a 64-bit long integer.
+ * 
+ * The `shmemc_ctx_wait_until_ne*_size()` function is called to handle
+ * the wait operation in the modern context-aware API.
+ */
 SHMEM_TYPE_WAIT(short, short, 16)
 SHMEM_TYPE_WAIT(int, int, 32)
 SHMEM_TYPE_WAIT(long, long, 64)

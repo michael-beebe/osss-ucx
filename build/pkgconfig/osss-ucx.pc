@@ -1,0 +1,16 @@
+# For license: see LICENSE file at top-level
+
+Name: osss-ucx
+Description: osss-ucx
+Version: 1.0.0
+URL: https://github.com/openshmem-org/osss-ucx.git
+#
+prefix=/home/mbeebe/lanl/openshmem/osss/osss-ucx_cosmetic/build/build
+exec_prefix=${prefix}
+includedir=${prefix}/include
+libdir=${exec_prefix}/lib
+#
+Libs: -Wl,-rpath,${exec_prefix}/lib -L${exec_prefix}/lib -lshmem -lshmemc-ucx -lshmemu -lshmemt -lshmem-amo  -lshcoll -L/home/mbeebe/sw/el9-x86_64/pmix/lib64 -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/pmix/lib64 -L/home/mbeebe/sw/el9-x86_64/pmix/lib -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/pmix/lib -lpmix -L/home/mbeebe/sw/el9-x86_64/ucx/lib64 -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/ucx/lib64 -L/home/mbeebe/sw/el9-x86_64/ucx/lib -Wl,-rpath -Wl,/home/mbeebe/sw/el9-x86_64/ucx/lib -lucp -lm
+Cflags: -I${prefix}/include
+#
+Provides: osss-ucx

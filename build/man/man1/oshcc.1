@@ -1,0 +1,41 @@
+.\" For license: see LICENSE file at top-level
+.TH oshcc 1 "" "OSSS-UCX"
+.SH NAME
+\fBoshcc\fP \- compile an OpenSHMEM C program
+.SH SYNOPSIS
+\fBoshcc\fP
+.RS 2
+.br
+[ underlying compiler flags ]
+.br
+file.c [file.c ...]
+.RE
+.SH DESCRIPTION
+\fBoshcc\fP is a wrapper in the vein of mpicc that compiles
+an OpenSHMEM program.  The wrapper hides implementation
+details from the user.
+.SH EXAMPLES
+The command
+.LP
+.RS 2
+$ oshcc -g -o foo.exe foo.c
+.RE
+.LP
+compiles foo.c into the OpenSHMEM executable foo.exe.
+.SH ENVIRONMENT
+.IP \f(CROSH_CC\fP 2
+Overrides the underlying compiler/linker invoked by this wrapper.  The
+default is determined when the OpenSHMEM library is built.
+.SH NOTES
+The OpenSHMEM specification does not say anything normative about how
+OpenSHMEM programs are compiled, linked and launched.  These wrapper
+programs are supplied as part of the Reference Library for
+convenience.
+.SH PKG-CONFIG
+The underlying flags/options are accessible via pkg-config(1) with the
+name \f(CRosss-ucx\fP.
+.SH SEE ALSO
+osh_intro(1),
+pkg-config(1).
+.SH OPENSHMEM
+http://www.openshmem.org/
