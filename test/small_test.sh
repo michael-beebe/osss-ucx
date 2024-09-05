@@ -19,12 +19,17 @@ mkdir bin
 
 # --- Set flags for mpiexec
 flags="--bind-to core --map-by core"
+hline="-------------------------------"
+
 
 # --- Hello world
+echo $hline ; echo "  Running Hello World test" ; echo $hline
 $oshcc hello_world.c -o ./bin/hello_world
 $oshrun $flags -np 20 ./bin/hello_world
-
+echo
 
 # --- shmem_put
+echo $hline ; echo "  Running shmem_put test" ; echo $hline
 $oshcc shmem_put.c -o ./bin/shmem_put
 $oshrun $flags -np 2 ./bin/shmem_put
+echo

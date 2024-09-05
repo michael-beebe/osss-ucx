@@ -9,6 +9,11 @@
 
 #include <shcoll.h>
 
+/* 
+ * If ENABLE_PSHMEM is defined, these pragma directives ensure that the weak 
+ * versions of the reduction functions are defined, and the "pshmem" versions 
+ * are used when available.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_complexd_sum_to_all = pshmem_complexd_sum_to_all
 #define shmem_complexd_sum_to_all pshmem_complexd_sum_to_all
@@ -100,6 +105,10 @@
 #define shmem_double_min_to_all pshmem_double_min_to_all
 #endif /* ENABLE_PSHMEM */
 
+/* 
+ * Macro to declare SHMEM reduction functions for the specified type, operation,
+ * and algorithm. This macro defines the function body for reduction operations.
+ */
 #define SHIM_REDUCE_DECLARE(_name, _type, _op, _algo)                   \
     void                                                                \
     shmem_##_name##_##_op##_to_all(_type *dest,                         \
@@ -121,39 +130,49 @@
                                                 pSync);                 \
     }
 
+/* Macro to declare bitwise reduction functions for short, int, long, and long long types. */
 #define SHIM_REDUCE_BITWISE_TYPES(_op, _algo)                       \
     SHIM_REDUCE_DECLARE(short,      short,       _op, _algo)        \
-        SHIM_REDUCE_DECLARE(int,        int,         _op, _algo)    \
-        SHIM_REDUCE_DECLARE(long,       long,        _op, _algo)    \
-        SHIM_REDUCE_DECLARE(longlong,   long long,   _op, _algo)
+    SHIM_REDUCE_DECLARE(int,        int,         _op, _algo)        \
+    SHIM_REDUCE_DECLARE(long,       long,        _op, _algo)        \
+    SHIM_REDUCE_DECLARE(longlong,   long long,   _op, _algo)
 
+/* Macro to declare min/max reduction functions for various types, including float and double. */
 #define SHIM_REDUCE_MINMAX_TYPES(_op, _algo)                        \
     SHIM_REDUCE_BITWISE_TYPES(_op, _algo)                           \
-        SHIM_REDUCE_DECLARE(double,     double,      _op, _algo)    \
-        SHIM_REDUCE_DECLARE(float,      float,       _op, _algo)    \
-        SHIM_REDUCE_DECLARE(longdouble, long double, _op, _algo)
+    SHIM_REDUCE_DECLARE(double,     double,      _op, _algo)        \
+    SHIM_REDUCE_DECLARE(float,      float,       _op, _algo)        \
+    SHIM_REDUCE_DECLARE(longdouble, long double, _op, _algo)
 
+/* 
+ * Macro to declare arithmetic reduction functions, including complex types 
+ * such as double _Complex and float _Complex.
+ */
 #define SHIM_REDUCE_ARITH_TYPES(_op, _algo)                         \
     SHIM_REDUCE_MINMAX_TYPES(_op, _algo)                            \
-        SHIM_REDUCE_DECLARE(complexd,  double _Complex, _op, _algo) \
-        SHIM_REDUCE_DECLARE(complexf,   float _Complex, _op, _algo)
+    SHIM_REDUCE_DECLARE(complexd,  double _Complex, _op, _algo)     \
+    SHIM_REDUCE_DECLARE(complexf,  float _Complex, _op, _algo)
 
+/* Macro to declare all bitwise reduction operations (or, xor, and) for all types. */
 #define SHIM_REDUCE_BITWISE_ALL(_algo)          \
     SHIM_REDUCE_BITWISE_TYPES(or, _algo)        \
-        SHIM_REDUCE_BITWISE_TYPES(xor, _algo)   \
-        SHIM_REDUCE_BITWISE_TYPES(and, _algo)
+    SHIM_REDUCE_BITWISE_TYPES(xor, _algo)       \
+    SHIM_REDUCE_BITWISE_TYPES(and, _algo)
 
+/* Macro to declare all min and max reduction operations for all types. */
 #define SHIM_REDUCE_MINMAX_ALL(_algo)           \
     SHIM_REDUCE_MINMAX_TYPES(min, _algo)        \
-        SHIM_REDUCE_MINMAX_TYPES(max, _algo)
+    SHIM_REDUCE_MINMAX_TYPES(max, _algo)
 
+/* Macro to declare all arithmetic reduction operations for all types. */
 #define SHIM_REDUCE_ARITH_ALL(_algo)            \
     SHIM_REDUCE_ARITH_TYPES(sum, _algo)         \
-        SHIM_REDUCE_ARITH_TYPES(prod, _algo)
+    SHIM_REDUCE_ARITH_TYPES(prod, _algo)
 
+/* Macro to declare all reduction operations for bitwise, minmax, and arithmetic types. */
 #define SHIM_REDUCE_ALL(_algo)                  \
     SHIM_REDUCE_BITWISE_ALL(_algo)              \
-        SHIM_REDUCE_MINMAX_ALL(_algo)           \
-        SHIM_REDUCE_ARITH_ALL(_algo)
+    SHIM_REDUCE_MINMAX_ALL(_algo)               \
+    SHIM_REDUCE_ARITH_ALL(_algo)
 
 #endif /* ! _REDUCTIONS_H */

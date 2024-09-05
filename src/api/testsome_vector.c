@@ -9,6 +9,12 @@
 #include "shmemu.h"
 #include "shmemc.h"
 
+/*
+ * Weak symbol declarations for SHMEM test_some_vector functions.
+ * These enable optional profiling (PSHMEM) versions of the test functions.
+ * If ENABLE_PSHMEM is defined, the symbols will point to their corresponding 
+ * profiling versions. Otherwise, the default SHMEM functions are used.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_test_some_vector = pshmem_short_test_some_vector
 #define shmem_short_test_some_vector pshmem_short_test_some_vector
@@ -40,6 +46,18 @@
 #define shmem_ptrdiff_test_some_vector pshmem_ptrdiff_test_some_vector
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * Macro for defining SHMEM test_some_vector functions for specific types.
+ * 
+ * SHMEM_TYPE_TEST_SOME_VECTOR generates functions that test whether some elements
+ * in an array (_opname) satisfy the comparison condition (cmp).
+ * The function returns the number of matching elements and stores their indices in an array.
+ *
+ * Parameters:
+ * _opname: operation name (e.g., short, int)
+ * _type: data type (e.g., short, int)
+ * _size: size of the data type in bits (e.g., 16, 32, 64)
+ */
 #define SHMEM_TYPE_TEST_SOME_VECTOR(_opname, _type, _size)              \
     size_t                                                              \
     shmem_##_opname##_test_some_vector(_type *ivars, size_t nelems,     \
@@ -104,6 +122,11 @@
                                                                         ); \
     }
 
+/*
+ * Implement the test_some_vector function for various types and sizes
+ * using the SHMEM_TYPE_TEST_SOME_VECTOR macro. These functions test whether
+ * some elements in an array match the comparison condition and return their indices.
+ */
 SHMEM_TYPE_TEST_SOME_VECTOR(short, short, 16)
 SHMEM_TYPE_TEST_SOME_VECTOR(int, int, 32)
 SHMEM_TYPE_TEST_SOME_VECTOR(long, long, 64)

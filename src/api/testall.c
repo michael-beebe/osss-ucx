@@ -9,6 +9,11 @@
 #include "shmemu.h"
 #include "shmemc.h"
 
+/*
+ * Define weak versions of the SHMEM test_all routines. These
+ * allow the user to override them or enable profiling versions
+ * when ENABLE_PSHMEM is set.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_test_all = pshmem_short_test_all
 #define shmem_short_test_all pshmem_short_test_all
@@ -40,6 +45,17 @@
 #define shmem_ptrdiff_test_all pshmem_ptrdiff_test_all
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * SHMEM_TYPE_TEST_ALL defines test_all routines for various
+ * data types (_opname) and sizes (_size). This macro generates
+ * a function that performs element-wise comparisons of all elements
+ * in a vector using specified comparison operators (e.g., EQ, NE, GT, LE).
+ *
+ * Parameters:
+ * _opname: the operation name (e.g., short, int)
+ * _type: the data type (e.g., short, int)
+ * _size: the size of the data type in bits (e.g., 16, 32, 64)
+ */
 #define SHMEM_TYPE_TEST_ALL(_opname, _type, _size)                      \
     int                                                                 \
     shmem_##_opname##_test_all(_type *ivars, size_t nelems,             \
@@ -103,6 +119,11 @@
                                                                         ); \
     }
 
+/*
+ * Define test_all functions for different types and sizes using
+ * SHMEM_TYPE_TEST_ALL macro. Each function tests all elements
+ * in a vector based on the specified comparison condition.
+ */
 SHMEM_TYPE_TEST_ALL(short, short, 16)
 SHMEM_TYPE_TEST_ALL(int, int, 32)
 SHMEM_TYPE_TEST_ALL(long, long, 64)

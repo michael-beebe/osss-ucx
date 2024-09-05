@@ -9,6 +9,11 @@
 #include "shmemu.h"
 #include "shmemc.h"
 
+/*
+ * Define weak versions of the SHMEM test routines, allowing them
+ * to be replaced by user-defined versions or linked to profiling
+ * versions when the ENABLE_PSHMEM flag is enabled.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_test = pshmem_short_test
 #define shmem_short_test pshmem_short_test
@@ -40,6 +45,16 @@
 #define shmem_ptrdiff_test pshmem_ptrdiff_test
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * SHMEM_TYPE_TEST macro defines the test routines for various data types.
+ * It accepts the following parameters:
+ * - _opname: the name of the operation (e.g., short, int)
+ * - _type: the data type of the variable (e.g., short, int)
+ * - _size: the size of the data type in bits (e.g., 16, 32, 64)
+ *
+ * The macro generates a function that tests a variable against a comparison
+ * value using different comparison operators (e.g., EQ, NE, GT, LE).
+ */
 #define SHMEM_TYPE_TEST(_opname, _type, _size)                          \
     int                                                                 \
     shmem_##_opname##_test(_type *ivar, int cmp, _type cmp_value)       \
@@ -89,6 +104,12 @@
                                                                         ); \
     }
 
+/*
+ * Define test routines for different data types (short, int, long, longlong, etc.)
+ * using the SHMEM_TYPE_TEST macro.
+ * These routines test a variable against a comparison value using
+ * the specified comparison operator (cmp) such as EQ, NE, GT, LE, etc.
+ */
 SHMEM_TYPE_TEST(short, short, 16)
 SHMEM_TYPE_TEST(int, int, 32)
 SHMEM_TYPE_TEST(long, long, 64)

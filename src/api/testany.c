@@ -9,6 +9,12 @@
 #include "shmemu.h"
 #include "shmemc.h"
 
+/*
+ * Weak symbol declarations for SHMEM test_any functions.
+ * These enable optional profiling (PSHMEM) versions of the test functions.
+ * If ENABLE_PSHMEM is defined, the symbols will point to their corresponding 
+ * profiling versions. Otherwise, the default SHMEM functions are used.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_test_any = pshmem_short_test_any
 #define shmem_short_test_any pshmem_short_test_any
@@ -40,6 +46,18 @@
 #define shmem_ptrdiff_test_any pshmem_ptrdiff_test_any
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * Macro for defining SHMEM test_any functions for specific types.
+ * 
+ * SHMEM_TYPE_TEST_ANY generates functions that check if any element
+ * in an array (_opname) matches the comparison condition (cmp).
+ * The function returns the index of the first matching element.
+ *
+ * Parameters:
+ * _opname: operation name (e.g., short, int)
+ * _type: data type (e.g., short, int)
+ * _size: size of the data type in bits (e.g., 16, 32, 64)
+ */
 #define SHMEM_TYPE_TEST_ANY(_opname, _type, _size)                      \
     size_t                                                              \
     shmem_##_opname##_test_any(_type *ivars, size_t nelems,             \
@@ -97,6 +115,11 @@
                                                                         ); \
     }
 
+/*
+ * Implement the test_any function for various types and sizes
+ * using the SHMEM_TYPE_TEST_ANY macro. These functions check
+ * if any element in an array matches the comparison condition.
+ */
 SHMEM_TYPE_TEST_ANY(short, short, 16)
 SHMEM_TYPE_TEST_ANY(int, int, 32)
 SHMEM_TYPE_TEST_ANY(long, long, 64)

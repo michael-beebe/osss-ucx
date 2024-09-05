@@ -33,39 +33,37 @@
 #endif /* ENABLE_PSHMEM */
 
 /*
- * finish SHMEM portion of program, release resources
+ * ---------------------------------
+ * Static helper routine: finalize_helper
+ * ---------------------------------
+ * Helper routine to complete the SHMEM finalization process. 
+ * Ensures that resources are released and the environment is cleaned up.
  */
-
 static void
 finalize_helper(void)
 {
     threadwrap_thread_t this;
 
-    /* do nothing if multiple finalizes */
+    /* Do nothing if already finalized */
     if (proc.refcount < 1) {
         return;
     }
 
-    logger(LOG_FINALIZE,
-           "%s()",
-           __func__
-           );
+    logger(LOG_FINALIZE, "%s()", __func__);
 
     this = threadwrap_thread_id();
     if (this != proc.td.invoking_thread) {
-
         logger(LOG_FINALIZE,
-               "mis-match: thread %lu initialized, but %lu finalized",
+               "Mismatch: thread %lu initialized, but %lu finalized",
                (unsigned long) proc.td.invoking_thread,
-               (unsigned long) this
-               );
+               (unsigned long) this);
     }
 
-    /* implicit barrier on finalize */
+    /* Implicit barrier on finalize */
     shmem_barrier_all();
 
+    /* Finalize all SHMEM components */
     shmemu_progress_finalize();
-
     shmemc_finalize();
     collectives_finalize();
     shmemt_finalize();
@@ -79,20 +77,30 @@ finalize_helper(void)
     proc.status = SHMEMC_PE_SHUTDOWN;
 }
 
+/*
+ * ---------------------------------
+ * Static helper routine: init_thread_helper
+ * ---------------------------------
+ * Helper routine to initialize SHMEM with a specific threading level.
+ *
+ * requested: The desired threading level.
+ * provided:  Pointer to store the provided threading level.
+ *
+ * Returns: 0 on success.
+ */
 inline static int
 init_thread_helper(int requested, int *provided)
 {
     int s;
 
-    /* do nothing if multiple inits */
+    /* Do nothing if already initialized */
     if (proc.refcount > 0) {
         return 0;
     }
 
-    /* set up comms, read environment */
-    shmemc_init();
-    /* utiltiies */
-    shmemt_init();
+    /* Initialize SHMEM components */
+    shmemc_init();    /* Comms */
+    shmemt_init();    /* Utilities */
     shmemu_init();
     collectives_init();
 
@@ -102,19 +110,16 @@ init_thread_helper(int requested, int *provided)
 
     shmemu_progress_init();
 
-    /* save and return thread level */
+    /* Handle threading level */
 #ifdef ENABLE_THREADS
     switch(requested) {
     case SHMEM_THREAD_SINGLE:
     case SHMEM_THREAD_FUNNELED:
     case SHMEM_THREAD_SERIALIZED:
     case SHMEM_THREAD_MULTIPLE:
-        break;                  /* nothing to do for now */
+        break;  /* Supported threading levels */
     default:
-        shmemu_fatal(MODULE
-                     ": unknown thread level %d requested",
-                     requested);
-        /* NOT REACHED */
+        shmemu_fatal(MODULE ": unknown thread level %d requested", requested);
         break;
     }
 
@@ -133,18 +138,17 @@ init_thread_helper(int requested, int *provided)
     shmemxa_init(proc.heaps.nheaps);
 #endif  /* ENABLE_EXPERIMENTAL */
 
+    /* Register atexit handler to ensure finalization */
     s = atexit(finalize_helper);
     if (s != 0) {
         shmemu_fatal(MODULE ": unable to register atexit() handler: %s",
-                     strerror(errno)
-                     );
-        /* NOT REACHED */
+                     strerror(errno));
     }
 
     proc.status = SHMEMC_PE_RUNNING;
-
     ++proc.refcount;
 
+    /* Print version and environment info if requested */
     if (shmemc_my_pe() == 0) {
         if (proc.env.print_version) {
             info_output_package_version(stdout, "# ", "", 0);
@@ -158,32 +162,49 @@ init_thread_helper(int requested, int *provided)
            "%s(requested=%s [%d], provided->%s [%d])",
            __func__,
            shmemu_thread_name(requested), requested,
-           shmemu_thread_name(proc.td.osh_tl), proc.td.osh_tl
-           );
+           shmemu_thread_name(proc.td.osh_tl), proc.td.osh_tl);
 
-    /* make sure all symmetric memory ready */
+    /* Ensure symmetric memory is ready */
     shmem_barrier_all();
 
-    /* just declare success */
-    return 0;
+    return 0;  /* Success */
 }
 
 /*
- * initialize/finalize SHMEM portion of program with threading model
+ * ---------------------------------
+ * Routine: shmem_finalize
+ * ---------------------------------
+ * Finalizes the SHMEM environment and cleans up resources.
  */
-
 void
 shmem_finalize(void)
 {
     finalize_helper();
 }
 
+/*
+ * ---------------------------------
+ * Routine: shmem_init_thread
+ * ---------------------------------
+ * Initializes SHMEM with a specific threading level.
+ *
+ * requested: The desired threading level.
+ * provided:  Pointer to store the provided threading level.
+ *
+ * Returns: 0 on success.
+ */
 int
 shmem_init_thread(int requested, int *provided)
 {
     return init_thread_helper(requested, provided);
 }
 
+/*
+ * ---------------------------------
+ * Routine: shmem_init
+ * ---------------------------------
+ * Initializes SHMEM with the default threading level (SHMEM_THREAD_SINGLE).
+ */
 void
 shmem_init(void)
 {
@@ -191,13 +212,28 @@ shmem_init(void)
 }
 
 #ifdef PR470
-
+/*
+ * ---------------------------------
+ * Routine: shmem_initialized
+ * ---------------------------------
+ * Checks if SHMEM has been initialized.
+ *
+ * Returns: 1 if initialized, 0 otherwise.
+ */
 int
 shmem_initialized(void)
 {
     return proc.refcount > 0;
 }
 
+/*
+ * ---------------------------------
+ * Routine: shmem_finalized
+ * ---------------------------------
+ * Checks if SHMEM has been finalized.
+ *
+ * Returns: 1 if finalized, 0 otherwise.
+ */
 int
 shmem_finalized(void)
 {

@@ -1,13 +1,19 @@
 /* For license: see LICENSE file at top-level */
 
+/* Include config header if available */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+/* Include necessary SHMEM headers */
 #include "shmem_mutex.h"
 #include "shmemu.h"
 #include "shmemc.h"
 
+/* 
+ * Enable weak symbols for SHMEM API functions when profiling is enabled. 
+ * This allows the profiling versions of the functions to be used if available.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_wait_until_any_vector = pshmem_short_wait_until_any_vector
 #define shmem_short_wait_until_any_vector pshmem_short_wait_until_any_vector
@@ -39,6 +45,15 @@
 #define shmem_ptrdiff_wait_until_any_vector pshmem_ptrdiff_wait_until_any_vector
 #endif  /* ENABLE_PSHMEM */
 
+/*
+ * Macro to define wait-until-any-vector function for different data types.
+ * The function waits until any element in the ivars array satisfies the 
+ * specified comparison condition (cmp) with the provided cmp_values.
+ *
+ * @param _opname: Data type name used in the function definition.
+ * @param _type: The C type of the variable (e.g., int, long, etc.).
+ * @param _size: Bit size of the type (e.g., 32, 64).
+ */
 #define SHMEM_TYPE_WAIT_UNTIL_ANY_VECTOR(_opname, _type, _size)         \
     size_t                                                              \
     shmem_##_opname##_wait_until_any_vector(_type *ivars,               \
@@ -46,8 +61,10 @@
                                             const int *status,          \
                                             int cmp, _type *cmp_values) \
     {                                                                   \
+        /* Protect the SHMEM communication call with a mutex */         \
         SHMEMT_MUTEX_PROTECT                                            \
             (                                                           \
+             /* Perform the operation based on the comparison type */   \
              switch (cmp) {                                             \
              case SHMEM_CMP_EQ:                                         \
                  return shmemc_ctx_wait_until_any_vector_eq##_size(SHMEM_CTX_DEFAULT, \
@@ -92,17 +109,19 @@
                                                                    cmp_values); \
                  break;                                                 \
              default:                                                   \
+                 /* Handle unknown comparison types */                  \
                  shmemu_fatal("unknown operator (code %d) in \"%s\"",   \
                               cmp,                                      \
                               __func__                                  \
                               );                                        \
                  return -1;                                             \
-                 /* NOT REACHED */                                      \
+                 /* Unreachable code */                                 \
                  break;                                                 \
              }                                                          \
                                                                         ); \
     }
 
+/* Define wait-until-any-vector functions for different types */
 SHMEM_TYPE_WAIT_UNTIL_ANY_VECTOR(short, short, 16)
 SHMEM_TYPE_WAIT_UNTIL_ANY_VECTOR(int, int, 32)
 SHMEM_TYPE_WAIT_UNTIL_ANY_VECTOR(long, long, 64)

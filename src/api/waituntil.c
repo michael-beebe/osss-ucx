@@ -1,13 +1,19 @@
 /* For license: see LICENSE file at top-level */
 
+/* Include config header if available */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+/* Include necessary SHMEM headers */
 #include "shmem_mutex.h"
 #include "shmemu.h"
 #include "shmemc.h"
 
+/* 
+ * Enable weak symbols for SHMEM API functions when profiling is enabled. 
+ * This allows the profiling versions of the functions to be used if available.
+ */
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_short_wait_until = pshmem_short_wait_until
 #define shmem_short_wait_until pshmem_short_wait_until
@@ -40,7 +46,13 @@
 #endif  /* ENABLE_PSHMEM */
 
 /**
- * wait_until with operator dispatchers, type-parameterized.
+ * Defines the shmem_wait_until function for various data types.
+ * This function waits until a specific element (ivar) satisfies a comparison (cmp)
+ * with the specified value (cmp_value).
+ *
+ * @param _opname: Operation name (used in the function definition).
+ * @param _type: Data type of the input variables.
+ * @param _size: Size (in bits) of the data type (e.g., 32 or 64).
  */
 #define SHMEM_TYPE_WAIT_UNTIL(_opname, _type, _size)                    \
     void                                                                \
@@ -48,8 +60,10 @@
                                  int cmp,                               \
                                  _type cmp_value)                       \
     {                                                                   \
+        /* No protection for SHMEM communication call */                \
         SHMEMT_MUTEX_NOPROTECT                                          \
             (                                                           \
+             /* Handle the comparison case based on the operator (cmp) */ \
              switch (cmp) {                                             \
              case SHMEM_CMP_EQ:                                         \
              shmemc_ctx_wait_until_eq##_size(SHMEM_CTX_DEFAULT,         \
@@ -82,6 +96,7 @@
                                              cmp_value);                \
              break;                                                     \
              default:                                                   \
+             /* Handle invalid comparison operator */                   \
              shmemu_fatal("unknown operator (code %d) in \"%s\"",       \
                           cmp,                                          \
                           __func__                                      \
@@ -93,6 +108,7 @@
                                                                         ); \
     }
 
+/* Define wait-until functions for different data types */
 SHMEM_TYPE_WAIT_UNTIL(short, short, 16)
 SHMEM_TYPE_WAIT_UNTIL(int, int, 32)
 SHMEM_TYPE_WAIT_UNTIL(long, long, 64)
@@ -108,6 +124,17 @@ SHMEM_TYPE_WAIT_UNTIL(uint64, uint64_t, 64)
 SHMEM_TYPE_WAIT_UNTIL(size, size_t, 64)
 SHMEM_TYPE_WAIT_UNTIL(ptrdiff, ptrdiff_t, 64)
 
+/**
+ * Function to wait on a signal variable (sig_addr) until it satisfies 
+ * the comparison with cmp_value, then return the value of the signal.
+ * This wraps the generic shmem_uint64_wait_until function.
+ *
+ * @param sig_addr: Pointer to the signal variable.
+ * @param cmp: Comparison operator (e.g., SHMEM_CMP_EQ).
+ * @param cmp_value: Comparison value.
+ *
+ * @return: The final value of the signal variable.
+ */
 uint64_t
 shmem_signal_wait_until(uint64_t *sig_addr,
                         int cmp,

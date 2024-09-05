@@ -9,16 +9,23 @@
 #include "thispe.h"
 
 /*
- * these point to underlying objects to be constant initialized
+ * These are constant-initialized team objects for use in OpenSHMEM.
+ * SHMEM_TEAM_WORLD: Represents all PEs (processing elements) in the program.
+ * SHMEM_TEAM_SHARED: Represents PEs that share a memory context.
+ * SHMEM_TEAM_INVALID: Used to indicate an invalid or non-existent team.
  */
-shmem_team_t SHMEM_TEAM_WORLD = (shmem_team_t) & shmemc_team_world;
-shmem_team_t SHMEM_TEAM_SHARED = (shmem_team_t) & shmemc_team_shared;
+shmem_team_t SHMEM_TEAM_WORLD = (shmem_team_t) &shmemc_team_world;
+shmem_team_t SHMEM_TEAM_SHARED = (shmem_team_t) &shmemc_team_shared;
 
 /*
- * a bad team
+ * A bad or invalid team, used as a placeholder for errors or invalid team state.
  */
 shmem_team_t SHMEM_TEAM_INVALID = NULL;
 
+/*
+ * Get the current PE number in the specified team.
+ * Returns -1 if the team is invalid.
+ */
 int
 shmem_team_my_pe(shmem_team_t team)
 {
@@ -32,6 +39,10 @@ shmem_team_my_pe(shmem_team_t team)
     }
 }
 
+/*
+ * Get the number of PEs in the specified team.
+ * Returns -1 if the team is invalid.
+ */
 int
 shmem_team_n_pes(shmem_team_t team)
 {
@@ -45,6 +56,10 @@ shmem_team_n_pes(shmem_team_t team)
     }
 }
 
+/*
+ * Get the configuration of the specified team and store it in the provided config struct.
+ * Returns -1 if the team is invalid.
+ */
 int
 shmem_team_get_config(shmem_team_t team,
                       shmem_team_config_t *config)
@@ -59,6 +74,10 @@ shmem_team_get_config(shmem_team_t team,
     }
 }
 
+/*
+ * Translate the PE number from one team to another team.
+ * Returns the translated PE number or -1 if the source team is invalid.
+ */
 int
 shmem_team_translate_pe(shmem_team_t src_team, int src_pe,
                         shmem_team_t dest_team)
@@ -74,6 +93,10 @@ shmem_team_translate_pe(shmem_team_t src_team, int src_pe,
     }
 }
 
+/*
+ * Split a parent team into a new team based on a strided pattern.
+ * Returns the status of the split operation, or -1 if the parent team is invalid.
+ */
 int
 shmem_team_split_strided(shmem_team_t parent_team,
                          int start, int stride, int size,
@@ -96,6 +119,10 @@ shmem_team_split_strided(shmem_team_t parent_team,
     }
 }
 
+/*
+ * Split a parent team into two new teams (x-axis and y-axis) based on a 2D pattern.
+ * Returns the status of the split operation, or -1 if the parent team is invalid.
+ */
 int
 shmem_team_split_2d(shmem_team_t parent_team,
                     int xrange,
@@ -125,6 +152,10 @@ shmem_team_split_2d(shmem_team_t parent_team,
     }
 }
 
+/*
+ * Destroy a team and free its resources.
+ * No return value is needed.
+ */
 void
 shmem_team_destroy(shmem_team_t team)
 {

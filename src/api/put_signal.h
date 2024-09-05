@@ -7,6 +7,13 @@
 #include "shmemc.h"
 #include "shmem_mutex.h"
 
+/*
+ * Macro to define context-specific signal-based put operations
+ * for a given data type '_type'. The function will transfer 
+ * 'nelems' elements from 'src' to 'dest' on PE 'pe', and update 
+ * the signal at 'sig_addr' using the value 'signal' and the 
+ * operation 'sig_op'.
+ */
 #define SHMEM_CTX_TYPED_PUT_SIGNAL(_name, _type)                    \
     void                                                            \
     shmem_ctx_##_name##_put_signal(shmem_ctx_t ctx,                 \
@@ -33,6 +40,13 @@
                                                    pe));            \
     }
 
+/*
+ * Macro to define signal-based put operations for a given 
+ * data type '_type' without specifying the context. The 
+ * function transfers 'nelems' elements from 'src' to 'dest' 
+ * and updates the signal at 'sig_addr' using the value 'signal' 
+ * and the operation 'sig_op'. Uses the default context.
+ */
 #define API_DECL_TYPED_PUT_SIGNAL(_name, _type)                         \
     void                                                                \
     shmem_##_name##_put_signal(_type *dest, const _type *src,           \
@@ -58,6 +72,12 @@
                                                    pe));                \
     }
 
+/*
+ * Macro to declare context-specific signal-based put operations 
+ * for a specific size '_size' in bits. Converts the size to 
+ * bytes and uses it to transfer 'nelems' elements from 'src' to 'dest'. 
+ * Updates the signal using the value 'signal' and the operation 'sig_op'.
+ */
 #define SHMEM_CTX_DECL_SIZED_PUT_SIGNAL(_size)                          \
     void                                                                \
     shmem_ctx_put##_size##_signal(shmem_ctx_t ctx,                      \
@@ -84,6 +104,13 @@
                                                      pe));              \
     }
 
+/*
+ * Macro to declare API-level signal-based put operations for 
+ * a specific size '_size' in bits. Converts the size to bytes 
+ * and transfers 'nelems' elements from 'src' to 'dest'. Updates 
+ * the signal using the value 'signal' and the operation 'sig_op'.
+ * Uses the default context.
+ */
 #define API_DECL_SIZED_PUT_SIGNAL(_size)                                \
     void                                                                \
     shmem_put##_size##_signal(void *dest, const void *src,              \
@@ -109,6 +136,12 @@
                                                    pe));                \
     }
 
+/*
+ * Macro to declare a context-specific signal-based put operation 
+ * for memory regions without specifying a data type. Transfers 
+ * 'nelems' bytes from 'src' to 'dest' and updates the signal at 
+ * 'sig_addr' using the value 'signal' and the operation 'sig_op'.
+ */
 #define SHMEM_CTX_DECL_PUTMEM_SIGNAL()                                  \
     void                                                                \
     shmem_ctx_putmem_signal(shmem_ctx_t ctx,                            \
@@ -133,6 +166,12 @@
                                                      pe));              \
     }
 
+/*
+ * Macro to declare an API-level signal-based put operation for 
+ * memory regions without specifying a data type. Transfers 'nelems' 
+ * bytes from 'src' to 'dest' and updates the signal using the value 
+ * 'signal' and the operation 'sig_op'. Uses the default context.
+ */
 #define API_DECL_PUTMEM_SIGNAL()                                        \
     void                                                                \
     shmem_putmem_signal(void *dest, const void *src,                    \
@@ -157,9 +196,17 @@
     }
 
 /*
- * non-blocking variants
+ * Macros for non-blocking signal-based put operations, which
+ * work similarly to their blocking counterparts but initiate
+ * non-blocking data transfer.
  */
 
+/*
+ * Macro to define context-specific non-blocking signal-based put 
+ * operations for a given data type '_type'. The function transfers 
+ * 'nelems' elements from 'src' to 'dest' and updates the signal at 
+ * 'sig_addr' using the value 'signal' and the operation 'sig_op'.
+ */
 #define SHMEM_CTX_TYPED_PUT_SIGNAL_NBI(_name, _type)                \
     void                                                            \
     shmem_ctx_##_name##_put_signal_nbi(shmem_ctx_t ctx,             \
@@ -188,6 +235,12 @@
                                                        pe));        \
     }
 
+/*
+ * Macro to define API-level non-blocking signal-based put operations 
+ * for a given data type '_type'. The function transfers 'nelems' 
+ * elements from 'src' to 'dest' and updates the signal at 'sig_addr' 
+ * using the value 'signal' and the operation 'sig_op'. Uses the default context.
+ */
 #define API_DECL_TYPED_PUT_SIGNAL_NBI(_name, _type)                     \
     void                                                                \
     shmem_##_name##_put_signal_nbi(_type *dest, const _type *src,       \
@@ -213,6 +266,12 @@
                                                        pe));            \
     }
 
+/*
+ * Macro to declare context-specific non-blocking signal-based put 
+ * operations for a specific size '_size' in bits. Converts the size 
+ * to bytes and transfers 'nelems' elements from 'src' to 'dest'.
+ * Updates the signal using the value 'signal' and the operation 'sig_op'.
+ */
 #define SHMEM_CTX_DECL_SIZED_PUT_SIGNAL_NBI(_size)                  \
     void                                                            \
     shmem_ctx_put##_size##_signal_nbi(shmem_ctx_t ctx,              \
@@ -239,6 +298,13 @@
                                                          pe));      \
     }
 
+/*
+ * Macro to declare API-level non-blocking signal-based put operations 
+ * for a specific size '_size' in bits. Converts the size to bytes 
+ * and transfers 'nelems' elements from 'src' to 'dest'. Updates the 
+ * signal using the value 'signal' and the operation 'sig_op'. 
+ * Uses the default context.
+ */
 #define API_DECL_SIZED_PUT_SIGNAL_NBI(_size)                            \
     void                                                                \
     shmem_put##_size##_signal_nbi(void *dest, const void *src,          \
@@ -264,6 +330,12 @@
                                                        pe));            \
     }
 
+/*
+ * Macro to declare context-specific non-blocking signal-based put 
+ * operations for memory regions without specifying a data type.
+ * Transfers 'nelems' bytes from 'src' to 'dest' and updates the 
+ * signal at 'sig_addr' using the value 'signal' and the operation 'sig_op'.
+ */
 #define SHMEM_CTX_DECL_PUTMEM_SIGNAL_NBI()                          \
     void                                                            \
     shmem_ctx_putmem_signal_nbi(shmem_ctx_t ctx,                    \
@@ -288,6 +360,12 @@
                                                          pe));      \
     }
 
+/*
+ * Macro to declare API-level non-blocking signal-based put operations 
+ * for memory regions without specifying a data type. Transfers 'nelems' 
+ * bytes from 'src' to 'dest' and updates the signal at 'sig_addr' 
+ * using the value 'signal' and the operation 'sig_op'. Uses the default context.
+ */
 #define API_DECL_PUTMEM_SIGNAL_NBI()                                    \
     void                                                                \
     shmem_putmem_signal_nbi(void *dest, const void *src,                \

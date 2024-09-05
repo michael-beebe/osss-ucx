@@ -19,6 +19,17 @@ static const int tag_width = 28;
 #define UNKNOWN        "unknown"
 #define INTERNAL_ERROR "not found [shouldn't happen]"
 
+/*
+ * Helper function: output
+ * ----------------------
+ * Outputs the information to the provided stream with formatted tags.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ * tag:    The label for the information.
+ * val:    The value associated with the tag.
+ */
 inline static void
 output(FILE *strm,
        const char *prefix, const char *suffix,
@@ -36,21 +47,37 @@ output(FILE *strm,
     }
 }
 
+/*
+ * function: info_output_spec_version
+ * ---------------------------------
+ * Outputs the OpenSHMEM Specification version to the provided stream.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_spec_version(FILE *strm, const char *prefix, const char *suffix)
 {
 #if defined(SHMEM_MAJOR_VERSION) && defined(SHMEM_MINOR_VERSION)
     char buf[BUFMAX];
 
-    snprintf(buf, BUFMAX,
-             "%d.%d",
-             SHMEM_MAJOR_VERSION, SHMEM_MINOR_VERSION);
+    snprintf(buf, BUFMAX, "%d.%d", SHMEM_MAJOR_VERSION, SHMEM_MINOR_VERSION);
 #else
     strncpy(buf, UNKNOWN, BUFMAX);
 #endif /* spec. version check */
     output(strm, prefix, suffix, "OpenSHMEM Specification", buf);
 }
 
+/*
+ * function: info_output_package_name
+ * ---------------------------------
+ * Outputs the OpenSHMEM Package name.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_package_name(FILE *strm, const char *prefix, const char *suffix)
 {
@@ -63,6 +90,15 @@ info_output_package_name(FILE *strm, const char *prefix, const char *suffix)
            );
 }
 
+/*
+ * function: info_output_package_contact
+ * ------------------------------------
+ * Outputs the OpenSHMEM Package URL and Bug Report information.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_package_contact(FILE *strm,
                             const char *prefix, const char *suffix)
@@ -84,6 +120,16 @@ info_output_package_contact(FILE *strm,
            );
 }
 
+/*
+ * function: info_output_package_version
+ * ------------------------------------
+ * Outputs the OpenSHMEM Package version.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ * terse:  If non-zero, omits the tag and outputs only the version value.
+ */
 void
 info_output_package_version(FILE *strm,
                             const char *prefix, const char *suffix,
@@ -97,9 +143,17 @@ info_output_package_version(FILE *strm,
            INTERNAL_ERROR
 #endif /* PACKAGE_VERSION */
            );
-
 }
 
+/*
+ * function: info_output_build_env
+ * ------------------------------
+ * Outputs information about the build environment.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_build_env(FILE *strm,
                       const char *prefix, const char *suffix)
@@ -135,6 +189,15 @@ info_output_build_env(FILE *strm,
     output(strm, prefix, suffix, "Execution host", (s == 0) ? host : UNKNOWN);
 }
 
+/*
+ * function: info_output_features
+ * -----------------------------
+ * Outputs the enabled/disabled features for the OpenSHMEM implementation.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_features(FILE *strm, const char *prefix, const char *suffix)
 {
@@ -216,6 +279,15 @@ info_output_features(FILE *strm, const char *prefix, const char *suffix)
 #endif /* SHMEM_DEFAULT_HEAP_SIZE */
 }
 
+/*
+ * function: info_output_comms
+ * --------------------------
+ * Outputs the communications-related build information.
+ *
+ * strm:   The file stream to output to.
+ * prefix: Prefix string for the tag.
+ * suffix: Suffix string for the value.
+ */
 void
 info_output_comms(FILE *strm, const char *prefix, const char *suffix)
 {
