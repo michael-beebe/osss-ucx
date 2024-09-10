@@ -163,3 +163,8 @@ shmem_team_destroy(shmem_team_t team)
 
     shmemc_team_destroy(th);
 }
+
+
+// TODO: shmem_team_create_ctx
+
+// TODO: shmem_ctx_get_team

@@ -49,9 +49,7 @@ typedef struct unsized_op {
  */
 
 typedef struct coll_ops {
-////////////////////////////////////////////////////////////
-    unsized_op_t   alltoall;      /* Typed all-to-all operation */
-////////////////////////////////////////////////////////////
+    sized_op_t   alltoall;      /* Typed all-to-all operation */
     sized_op_t   alltoalls;     /* Sized all-to-all strided operation */
     sized_op_t   collect;       /* Sized collect operation */
     sized_op_t   fcollect;      /* Sized familiar collect operation */

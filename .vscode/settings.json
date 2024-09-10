@@ -1,0 +1,26 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "array": "c",
+        "*.tcc": "c",
+        "concepts": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "memory": "c",
+        "optional": "c",
+        "string_view": "c",
+        "istream": "c",
+        "ostream": "c",
+        "sstream": "c",
+        "streambuf": "c",
+        "functional": "c",
+        "tuple": "c",
+        "variant": "c",
+        "cstdint": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c",
+        "utility": "c"
+    }
+}

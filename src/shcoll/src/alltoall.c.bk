@@ -236,7 +236,6 @@ ALLTOALL_HELPER_SIGNAL_DEFINITION(color_pairwise_exchange, COLOR_PEER, (PE_size 
 
 // @formatter:on
 
-///////////////////////////////////////////////////////////////////////////////
 /*
  * SHCOLL_ALLTOALL_DEFINITION macro defines the full alltoall function 
  * for the given algorithm (_name) and data size (_size).
@@ -250,17 +249,6 @@ ALLTOALL_HELPER_SIGNAL_DEFINITION(color_pairwise_exchange, COLOR_PEER, (PE_size 
         alltoall_helper_##_name(dest, source, (_size) / (CHAR_BIT) * nelems,\
                                 PE_start, logPE_stride, PE_size, pSync);    \
 }                                                                           \
-
-
-// #define SHCOLL_ALLTOALL_DEFINITION(_name, _type, _algo)     \
-//     void                                                    \
-//     scholl_##_name##_alltoall_##_algo(shmem_team_t team,    \
-//                                       _type *dest,          \
-//                                       const _type *source,  \
-//                                       size_t nelems) {
-//         // TODO: alltoall_helper_##_algo()
-//     }   
-///////////////////////////////////////////////////////////////////////////////
 
 
 // @formatter:off

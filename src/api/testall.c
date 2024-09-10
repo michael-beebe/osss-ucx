@@ -49,7 +49,8 @@
  * SHMEM_TYPE_TEST_ALL defines test_all routines for various
  * data types (_opname) and sizes (_size). This macro generates
  * a function that performs element-wise comparisons of all elements
- * in a vector using specified comparison operators (e.g., EQ, NE, GT, LE).
+ * in a vector using specified comparison operators (e.g., SHMEM_CMP_EQ,
+ * SHMEM_CMP_NE, SHMEM_CMP_NE, SHMEM_CMP_GE, SHMEM_CMP_LT, SHMEM_CMP_LE).
  *
  * Parameters:
  * _opname: the operation name (e.g., short, int)

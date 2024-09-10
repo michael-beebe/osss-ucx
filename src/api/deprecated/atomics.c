@@ -35,7 +35,8 @@
  *
  */
 
-static const shmemu_version_t v = { .major = 1, .minor = 4 };  /* Version 1.4, when these functions were deprecated */
+/* Version 1.4, when these routines were deprecated */
+static const shmemu_version_t v = { .major = 1, .minor = 4 };
 
 /* 
  * Macro for deprecating atomic operations with 1 parameter (void return type).

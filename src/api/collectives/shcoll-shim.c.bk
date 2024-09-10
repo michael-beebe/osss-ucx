@@ -63,96 +63,46 @@ collectives_finalize(void)
  * via the `colls` structure.
  */
 
-////////////////////////////////////////////////////////
-// #ifdef ENABLE_PSHMEM
-// #pragma weak shmem_alltoall32 = pshmem_alltoall32
-// #define shmem_alltoall32 pshmem_alltoall32
-// #pragma weak shmem_alltoall64 = pshmem_alltoall64
-// #define shmem_alltoall64 pshmem_alltoall64
-// #endif /* ENABLE_PSHMEM */
-
-// /*
-//  * TODO: deprecate shmem_alltoall32
-//  * SHMEM all-to-all communication for 32-bit data.
-//  * Distributes data from all PEs to all other PEs.
-//  */
-// void
-// shmem_alltoall32(void *target, const void *source, size_t nelems,
-//                  int PE_start, int logPE_stride, int PE_size, long *pSync)
-// {
-//     logger(LOG_COLLECTIVES,
-//            "%s(%p, %p, %lu, %d, %d, %d, %p)",
-//            __func__,
-//            target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
-
-//     colls.alltoall.f32(target, source, nelems,
-//                        PE_start, logPE_stride, PE_size, pSync);
-// }
-
-// /*
-//  * TODO: deprecate shmem_alltoall64
-//  * SHMEM all-to-all communication for 64-bit data.
-//  * Distributes data from all PEs to all other PEs.
-//  */
-// void
-// shmem_alltoall64(void *target, const void *source, size_t nelems,
-//                  int PE_start, int logPE_stride, int PE_size, long *pSync)
-// {
-//     logger(LOG_COLLECTIVES,
-//            "%s(%p, %p, %lu, %d, %d, %d, %p)",
-//            __func__,
-//            target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
-
-//     colls.alltoall.f64(target, source, nelems,
-//                        PE_start, logPE_stride, PE_size, pSync);
-// }
-
-////////////////////////////////////////////////////////
 #ifdef ENABLE_PSHMEM
-#pragma weak shmem_alltoall = pshmem_alltoall
-#define shmem_alltoall pshmem_alltoall
+#pragma weak shmem_alltoall32 = pshmem_alltoall32
+#define shmem_alltoall32 pshmem_alltoall32
+#pragma weak shmem_alltoall64 = pshmem_alltoall64
+#define shmem_alltoall64 pshmem_alltoall64
 #endif /* ENABLE_PSHMEM */
 
-#define API_DECL_TYPED_ALLTOALL(_name, _type)           \
-    int                                                 \
-    shmem_##_name##_alltoall(shmem_team_t team,         \
-                             _type *dest,               \
-                             const _type *source,       \
-                             size_t nelems)             \
-    {                                                   \
-        logger(LOG_COLLECTIVES,                         \
-               "%s(%p, %p, %p, %lu)",                   \
-               __func__,                                \
-               team, dest, source, nelems);             \
-                                                        \
-        colls.alltoall.f(team, dest, source, nelems);   \
-    }
+/*
+ * SHMEM all-to-all communication for 32-bit data.
+ * Distributes data from all PEs to all other PEs.
+ */
+void
+shmem_alltoall32(void *target, const void *source, size_t nelems,
+                 int PE_start, int logPE_stride, int PE_size, long *pSync)
+{
+    logger(LOG_COLLECTIVES,
+           "%s(%p, %p, %lu, %d, %d, %d, %p)",
+           __func__,
+           target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
 
-API_DECL_TYPED_ALLTOALL(float, float)
-API_DECL_TYPED_ALLTOALL(double, double)
-API_DECL_TYPED_ALLTOALL(longdouble, long double)
-API_DECL_TYPED_ALLTOALL(char, char)
-API_DECL_TYPED_ALLTOALL(schar, signed char)
-API_DECL_TYPED_ALLTOALL(short, short)
-API_DECL_TYPED_ALLTOALL(int, int)
-API_DECL_TYPED_ALLTOALL(long, long)
-API_DECL_TYPED_ALLTOALL(longlong, long long)
-API_DECL_TYPED_ALLTOALL(uchar, unsigned char)
-API_DECL_TYPED_ALLTOALL(ushort, unsigned short)
-API_DECL_TYPED_ALLTOALL(uint, unsigned int)
-API_DECL_TYPED_ALLTOALL(ulong, unsigned long)
-API_DECL_TYPED_ALLTOALL(ulonglong, unsigned long long)
-API_DECL_TYPED_ALLTOALL(int8, int8_t)
-API_DECL_TYPED_ALLTOALL(int16, int16_t)
-API_DECL_TYPED_ALLTOALL(int32, int32_t)
-API_DECL_TYPED_ALLTOALL(int64, int64_t)
-API_DECL_TYPED_ALLTOALL(uint8, uint8_t)
-API_DECL_TYPED_ALLTOALL(uint16, uint16_t)
-API_DECL_TYPED_ALLTOALL(uint32, uint32_t)
-API_DECL_TYPED_ALLTOALL(uint64, uint64_t)
-API_DECL_TYPED_ALLTOALL(size, size_t)
-API_DECL_TYPED_ALLTOALL(ptrdiff, ptrdiff_t)
-//////////////////////////////////////////////////////////
+    colls.alltoall.f32(target, source, nelems,
+                       PE_start, logPE_stride, PE_size, pSync);
+}
+
+/*
+ * SHMEM all-to-all communication for 64-bit data.
+ * Distributes data from all PEs to all other PEs.
+ */
+void
+shmem_alltoall64(void *target, const void *source, size_t nelems,
+                 int PE_start, int logPE_stride, int PE_size, long *pSync)
+{
+    logger(LOG_COLLECTIVES,
+           "%s(%p, %p, %lu, %d, %d, %d, %p)",
+           __func__,
+           target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
+
+    colls.alltoall.f64(target, source, nelems,
+                       PE_start, logPE_stride, PE_size, pSync);
+}
 
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_alltoalls32 = pshmem_alltoalls32
@@ -162,7 +112,6 @@ API_DECL_TYPED_ALLTOALL(ptrdiff, ptrdiff_t)
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate shmem_alltoalls32
  * SHMEM all-to-all strided communication for 32-bit data.
  * Similar to all-to-all but allows strided access to data.
  */
@@ -187,7 +136,6 @@ shmem_alltoalls32(void *target, const void *source,
 }
 
 /*
- * TODO: deprecate shmem_alltoalls64
  * SHMEM all-to-all strided communication for 64-bit data.
  * Similar to all-to-all but allows strided access to data.
  */
@@ -219,7 +167,6 @@ shmem_alltoalls64(void *target, const void *source,
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate shmem_collect32
  * SHMEM collect operation for 32-bit data.
  * Gathers data from all PEs into a single target buffer.
  */
@@ -237,7 +184,6 @@ shmem_collect32(void *target, const void *source, size_t nelems,
 }
 
 /*
- * TODO: deprecate shmem_collect64
  * SHMEM collect operation for 64-bit data.
  * Gathers data from all PEs into a single target buffer.
  */
@@ -262,7 +208,6 @@ shmem_collect64(void *target, const void *source, size_t nelems,
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate shmem_fcollect32
  * SHMEM familiar collect operation for 32-bit data.
  * Similar to collect but with certain familiar properties.
  */
@@ -280,7 +225,6 @@ shmem_fcollect32(void *target, const void *source, size_t nelems,
 }
 
 /*
- * TODO: deprecate shmem_fcollect64
  * SHMEM familiar collect operation for 64-bit data.
  * Similar to collect but with certain familiar properties.
  */
@@ -303,7 +247,6 @@ shmem_fcollect64(void *target, const void *source, size_t nelems,
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate shmem_barrier
  * SHMEM barrier operation.
  * Synchronizes all PEs in the specified set.
  */
@@ -347,7 +290,6 @@ shmem_barrier_all(void)
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate this version of shmem_sync
  * SHMEM sync operation.
  * Synchronizes a subset of PEs.
  */
@@ -387,7 +329,6 @@ shmem_sync_all(void)
 #endif /* ENABLE_PSHMEM */
 
 /*
- * TODO: deprecate shmem_broadcast32
  * SHMEM broadcast operation for 32-bit data.
  * Broadcasts data from a root PE to all other PEs.
  */
@@ -407,7 +348,6 @@ shmem_broadcast32(void *target, const void *source,
 }
 
 /*
- * TODO: deprecate shmem_broadcast64
  * SHMEM broadcast operation for 64-bit data.
  * Broadcasts data from a root PE to all other PEs.
  */

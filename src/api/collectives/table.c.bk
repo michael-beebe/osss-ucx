@@ -13,8 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// TODO: change which routines are sized and unsized. I think they are all sized
-
 /*
  * Macros for constructing tables of known algorithms.
  *
@@ -60,33 +58,18 @@ broadcast_tab[] = {
     SIZED_LAST
 };
 
-////////////////////////////////////////////////////////////
-// XXX
 /* All-to-all algorithms */
-// static sized_op_t
-// alltoall_tab[] = {
-//     SIZED_REG(alltoall, shift_exchange_barrier),
-//     SIZED_REG(alltoall, shift_exchange_counter),
-//     SIZED_REG(alltoall, shift_exchange_signal),
-//     SIZED_REG(alltoall, xor_pairwise_exchange_barrier),
-//     SIZED_REG(alltoall, color_pairwise_exchange_signal),
-//     SIZED_REG(alltoall, color_pairwise_exchange_barrier),
-//     SIZED_REG(alltoall, color_pairwise_exchange_counter),
-//     SIZED_LAST
-// };
-
-static unsized_op_t
+static sized_op_t
 alltoall_tab[] = {
-    UNSIZED_REG(alltoall, shift_exchange_barrier),
-    UNSIZED_REG(alltoall, shift_exchange_counter),
-    UNSIZED_REG(alltoall, shift_exchange_signal),
-    UNSIZED_REG(alltoall, xor_pairwise_exchange_barrier),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_signal),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_barrier),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_counter),
-    UNSIZED_LAST
+    SIZED_REG(alltoall, shift_exchange_barrier),
+    SIZED_REG(alltoall, shift_exchange_counter),
+    SIZED_REG(alltoall, shift_exchange_signal),
+    SIZED_REG(alltoall, xor_pairwise_exchange_barrier),
+    SIZED_REG(alltoall, color_pairwise_exchange_signal),
+    SIZED_REG(alltoall, color_pairwise_exchange_barrier),
+    SIZED_REG(alltoall, color_pairwise_exchange_counter),
+    SIZED_LAST
 };
-////////////////////////////////////////////////////////////
 
 /* All-to-all strided algorithms */
 static sized_op_t
@@ -264,13 +247,7 @@ coll_ops_t colls;
     }
 
 /* Define the registration functions for all collective operations */
-////////////////////////////////////////////////////////////
-// XXX
-// REGISTER_SIZED(alltoall)
-
-REGISTER_UNSIZED(alltoall)
-
-////////////////////////////////////////////////////////////
+REGISTER_SIZED(alltoall)
 REGISTER_SIZED(alltoalls)
 REGISTER_SIZED(broadcast)
 REGISTER_SIZED(collect)

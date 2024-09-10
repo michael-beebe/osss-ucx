@@ -53,7 +53,8 @@
  * - _size: the size of the data type in bits (e.g., 16, 32, 64)
  *
  * The macro generates a function that tests a variable against a comparison
- * value using different comparison operators (e.g., EQ, NE, GT, LE).
+ * value using different comparison operators (e.g., SHMEM_CMP_EQ,
+ * SHMEM_CMP_NE, SHMEM_CMP_NE, SHMEM_CMP_GE, SHMEM_CMP_LT, SHMEM_CMP_LE).
  */
 #define SHMEM_TYPE_TEST(_opname, _type, _size)                          \
     int                                                                 \
