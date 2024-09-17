@@ -27,13 +27,32 @@
     }
 
 /*
+ * Modified macro to register typed collectives like alltoall.
+ * It takes both the collective name and the type as arguments.
+ */
+#define TRY_TYPED(_cname, _type)                                          \
+    {                                                                     \
+        const int s = register_##_cname(proc.env.coll._cname, _type);     \
+                                                                          \
+        if (s != 0) {                                                     \
+            shmemu_fatal("couldn't register collective \"%s\" of type \"%s\" (s = %d)", \
+                         #_cname, _type, s);                              \
+        }                                                                 \
+    }
+
+/*
  * Initialization function for collective operations.
  * Registers the default algorithms for each collective operation.
  */
 void
 collectives_init(void)
 {
-    TRY(alltoall);       /* Register the all-to-all operation */
+    /* Register alltoall operations with their respective types */
+    TRY_TYPED(alltoall, "float");
+    TRY_TYPED(alltoall, "double");
+    TRY_TYPED(alltoall, "int");
+
+    /* Register other collectives */
     TRY(alltoalls);      /* Register the all-to-all strided operation */
     TRY(collect);        /* Register the collect operation */
     TRY(fcollect);       /* Register the familiar collect operation */
@@ -63,51 +82,6 @@ collectives_finalize(void)
  * via the `colls` structure.
  */
 
-////////////////////////////////////////////////////////
-// #ifdef ENABLE_PSHMEM
-// #pragma weak shmem_alltoall32 = pshmem_alltoall32
-// #define shmem_alltoall32 pshmem_alltoall32
-// #pragma weak shmem_alltoall64 = pshmem_alltoall64
-// #define shmem_alltoall64 pshmem_alltoall64
-// #endif /* ENABLE_PSHMEM */
-
-// /*
-//  * TODO: deprecate shmem_alltoall32
-//  * SHMEM all-to-all communication for 32-bit data.
-//  * Distributes data from all PEs to all other PEs.
-//  */
-// void
-// shmem_alltoall32(void *target, const void *source, size_t nelems,
-//                  int PE_start, int logPE_stride, int PE_size, long *pSync)
-// {
-//     logger(LOG_COLLECTIVES,
-//            "%s(%p, %p, %lu, %d, %d, %d, %p)",
-//            __func__,
-//            target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
-
-//     colls.alltoall.f32(target, source, nelems,
-//                        PE_start, logPE_stride, PE_size, pSync);
-// }
-
-// /*
-//  * TODO: deprecate shmem_alltoall64
-//  * SHMEM all-to-all communication for 64-bit data.
-//  * Distributes data from all PEs to all other PEs.
-//  */
-// void
-// shmem_alltoall64(void *target, const void *source, size_t nelems,
-//                  int PE_start, int logPE_stride, int PE_size, long *pSync)
-// {
-//     logger(LOG_COLLECTIVES,
-//            "%s(%p, %p, %lu, %d, %d, %d, %p)",
-//            __func__,
-//            target, source, nelems, PE_start, logPE_stride, PE_size, pSync);
-
-//     colls.alltoall.f64(target, source, nelems,
-//                        PE_start, logPE_stride, PE_size, pSync);
-// }
-
-////////////////////////////////////////////////////////
 #ifdef ENABLE_PSHMEM
 #pragma weak shmem_alltoall = pshmem_alltoall
 #define shmem_alltoall pshmem_alltoall
@@ -130,11 +104,11 @@ collectives_finalize(void)
 
 API_DECL_TYPED_ALLTOALL(float, float)
 API_DECL_TYPED_ALLTOALL(double, double)
+API_DECL_TYPED_ALLTOALL(int, int)
 API_DECL_TYPED_ALLTOALL(longdouble, long double)
 API_DECL_TYPED_ALLTOALL(char, char)
 API_DECL_TYPED_ALLTOALL(schar, signed char)
 API_DECL_TYPED_ALLTOALL(short, short)
-API_DECL_TYPED_ALLTOALL(int, int)
 API_DECL_TYPED_ALLTOALL(long, long)
 API_DECL_TYPED_ALLTOALL(longlong, long long)
 API_DECL_TYPED_ALLTOALL(uchar, unsigned char)
@@ -152,6 +126,7 @@ API_DECL_TYPED_ALLTOALL(uint32, uint32_t)
 API_DECL_TYPED_ALLTOALL(uint64, uint64_t)
 API_DECL_TYPED_ALLTOALL(size, size_t)
 API_DECL_TYPED_ALLTOALL(ptrdiff, ptrdiff_t)
+
 //////////////////////////////////////////////////////////
 
 #ifdef ENABLE_PSHMEM

@@ -1,14 +1,20 @@
 #ifndef _SHCOLL_ALLTOALL_H
 #define _SHCOLL_ALLTOALL_H 1
 
-#define SHCOLL_ALLTOALL_DECLARATION(_name, _type, _algo)                \
+#include "shmem/teams.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <float.h>
+
+
+#define SHCOLL_ALLTOALL_DECLARATION(_typename, _type, _algo)            \
     void                                                                \
-    shcoll_##_name##_alltoall_##_algo(shmem_team_t team,                \
+    shcoll_##_typename##_alltoall_##_algo(shmem_team_t team,            \
                                                _type *dest,             \
                                                const _type *source,     \
                                                size_t nelems);          \
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_barrier)
+/* shift_exchange_barrier */
 SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(double, double, shift_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, shift_exchange_barrier)
@@ -34,7 +40,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, shift_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, shift_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, shift_exchange_barrier)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_counter)
+/* shift_exchange_counter */
 SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(double, double, shift_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, shift_exchange_counter)
@@ -60,7 +66,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, shift_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, shift_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, shift_exchange_counter)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_signal)
+/* shift_exchange_signal */
 SHCOLL_ALLTOALL_DECLARATION(float, float, shift_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(double, double, shift_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, shift_exchange_signal)
@@ -86,33 +92,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, shift_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, shift_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, shift_exchange_signal)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(double, double, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(char, char, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(schar, signed char, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(short, short, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(int, int, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(long, long, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(longlong, long long, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uchar, unsigned char, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(ushort, unsigned short, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uint, unsigned int, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(ulong, unsigned long, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(ulonglong, unsigned long long, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(int8, int8_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(int16, int16_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(int32, int32_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(int64, int64_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uint8, uint8_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uint16, uint16_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uint32, uint32_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(size, size_t, color_pairwise_exchange_signal)
-SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, color_pairwise_exchange_signal)
-
-SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_barrier)
+/* xor_pairwise_exchange_barrier */
 SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(double, double, xor_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, xor_pairwise_exchange_barrier)
@@ -138,7 +118,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, xor_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, xor_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, xor_pairwise_exchange_barrier)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_counter)
+/* xor_pairwise_exchange_counter */
 SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(double, double, xor_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, xor_pairwise_exchange_counter)
@@ -164,7 +144,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, xor_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, xor_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, xor_pairwise_exchange_counter)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_signal)
+/* xor_pairwise_exchange_signal */
 SHCOLL_ALLTOALL_DECLARATION(float, float, xor_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(double, double, xor_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, xor_pairwise_exchange_signal)
@@ -190,7 +170,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, xor_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, xor_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, xor_pairwise_exchange_signal)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_barrier)
+/* color_pairwise_exchange_barrier */
 SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(double, double, color_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, color_pairwise_exchange_barrier)
@@ -216,7 +196,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, color_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, color_pairwise_exchange_barrier)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, color_pairwise_exchange_barrier)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_counter)
+/* color_pairwise_exchange_counter */
 SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(double, double, color_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, color_pairwise_exchange_counter)
@@ -242,7 +222,7 @@ SHCOLL_ALLTOALL_DECLARATION(uint64, uint64_t, color_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(size, size_t, color_pairwise_exchange_counter)
 SHCOLL_ALLTOALL_DECLARATION(ptrdiff, ptrdiff_t, color_pairwise_exchange_counter)
 
-SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_signal)
+/* color_pairwise_exchange_signal */
 SHCOLL_ALLTOALL_DECLARATION(float, float, color_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(double, double, color_pairwise_exchange_signal)
 SHCOLL_ALLTOALL_DECLARATION(longdouble, long double, color_pairwise_exchange_signal)

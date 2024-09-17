@@ -13,44 +13,65 @@
 #include <stdio.h>
 #include <string.h>
 
-// TODO: change which routines are sized and unsized. I think they are all sized
+/* Macros for registering collective algorithms */
 
-/*
- * Macros for constructing tables of known algorithms.
- *
- * SIZED_REG - Registers algorithms that have both 32-bit and 64-bit versions.
- * SIZED_LAST - Indicates the end of a sized operation table.
- * UNSIZED_REG - Registers algorithms that are not size-dependent.
- * UNSIZED_LAST - Indicates the end of an unsized operation table.
- */
+/* Register a sized algorithm (32-bit and 64-bit variants) */
+#define SIZED_REG(_typename, _algo)                \
+    { #_algo,                                      \
+      shcoll_##_typename##32##_##_algo,            \
+      shcoll_##_typename##64##_##_algo }
 
-#define SIZED_REG(_type, _name)                 \
-    { #_name,                                   \
-            shcoll_##_type##32##_##_name,       \
-            shcoll_##_type##64##_##_name }
-
-#define SIZED_LAST                              \
+/* End of a sized operation table */
+#define SIZED_LAST                                 \
     { "", NULL, NULL }
 
-#define UNSIZED_REG(_type, _name)               \
-    { #_name,                                   \
-            shcoll_##_type##_##_name }
+/* Register an unsized algorithm (no 32/64-bit distinction) */
+#define UNSIZED_REG(_typename, _algo)              \
+    { #_algo, shcoll_##_typename##_##_algo }
 
-#define UNSIZED_LAST                            \
+/* End of an unsized operation table */
+#define UNSIZED_LAST                               \
     { "", NULL }
 
-/*
- * These tables define the known implementations of various SHCOLL
- * collective operations. Each table corresponds to a specific
- * collective operation (e.g., broadcast, alltoall) and lists the
- * available algorithms for that operation.
- */
+/* Register a typed algorithm for all-to-all */
+#define UNSIZED_TYPED_REG(_typename, _type, _algo) \
+    { #_algo, #_type, shcoll_##_type##_##_typename##_##_algo }
 
+/* End of a typed unsized operation table */
+#define UNSIZED_TYPED_LAST                         \
+    { "", "", NULL }
 
+/* All-to-all typed algorithm table */
+static unsized_typed_op_t alltoall_tab[] = {
+    UNSIZED_TYPED_REG(alltoall, float, shift_exchange_barrier),
+    UNSIZED_TYPED_REG(alltoall, double, shift_exchange_barrier),
+    UNSIZED_TYPED_REG(alltoall, int, shift_exchange_barrier),
+
+    UNSIZED_TYPED_REG(alltoall, float, shift_exchange_counter),
+    UNSIZED_TYPED_REG(alltoall, double, shift_exchange_counter),
+    UNSIZED_TYPED_REG(alltoall, int, shift_exchange_counter),
+
+    UNSIZED_TYPED_REG(alltoall, float, shift_exchange_signal),
+    UNSIZED_TYPED_REG(alltoall, double, shift_exchange_signal),
+    UNSIZED_TYPED_REG(alltoall, int, shift_exchange_signal),
+
+    UNSIZED_TYPED_REG(alltoall, float, xor_pairwise_exchange_barrier),
+    UNSIZED_TYPED_REG(alltoall, double, xor_pairwise_exchange_barrier),
+    UNSIZED_TYPED_REG(alltoall, int, xor_pairwise_exchange_barrier),
+    
+    UNSIZED_TYPED_REG(alltoall, float, xor_pairwise_exchange_counter),
+    UNSIZED_TYPED_REG(alltoall, double, xor_pairwise_exchange_counter),
+    UNSIZED_TYPED_REG(alltoall, int, xor_pairwise_exchange_counter),
+    
+    UNSIZED_TYPED_REG(alltoall, float, xor_pairwise_exchange_signal),
+    UNSIZED_TYPED_REG(alltoall, double, xor_pairwise_exchange_signal),
+    UNSIZED_TYPED_REG(alltoall, int, xor_pairwise_exchange_signal),
+
+    UNSIZED_TYPED_LAST
+};
 
 /* Broadcast algorithms */
-static sized_op_t
-broadcast_tab[] = {
+static sized_op_t broadcast_tab[] = {
     SIZED_REG(broadcast, linear),
     SIZED_REG(broadcast, complete_tree),
     SIZED_REG(broadcast, binomial_tree),
@@ -60,37 +81,8 @@ broadcast_tab[] = {
     SIZED_LAST
 };
 
-////////////////////////////////////////////////////////////
-// XXX
-/* All-to-all algorithms */
-// static sized_op_t
-// alltoall_tab[] = {
-//     SIZED_REG(alltoall, shift_exchange_barrier),
-//     SIZED_REG(alltoall, shift_exchange_counter),
-//     SIZED_REG(alltoall, shift_exchange_signal),
-//     SIZED_REG(alltoall, xor_pairwise_exchange_barrier),
-//     SIZED_REG(alltoall, color_pairwise_exchange_signal),
-//     SIZED_REG(alltoall, color_pairwise_exchange_barrier),
-//     SIZED_REG(alltoall, color_pairwise_exchange_counter),
-//     SIZED_LAST
-// };
-
-static unsized_op_t
-alltoall_tab[] = {
-    UNSIZED_REG(alltoall, shift_exchange_barrier),
-    UNSIZED_REG(alltoall, shift_exchange_counter),
-    UNSIZED_REG(alltoall, shift_exchange_signal),
-    UNSIZED_REG(alltoall, xor_pairwise_exchange_barrier),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_signal),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_barrier),
-    UNSIZED_REG(alltoall, color_pairwise_exchange_counter),
-    UNSIZED_LAST
-};
-////////////////////////////////////////////////////////////
-
 /* All-to-all strided algorithms */
-static sized_op_t
-alltoalls_tab[] = {
+static sized_op_t alltoalls_tab[] = {
     SIZED_REG(alltoalls, shift_exchange_barrier),
     SIZED_REG(alltoalls, shift_exchange_counter),
     SIZED_REG(alltoalls, shift_exchange_barrier_nbi),
@@ -107,8 +99,7 @@ alltoalls_tab[] = {
 };
 
 /* Collect algorithms */
-static sized_op_t
-collect_tab[] = {
+static sized_op_t collect_tab[] = {
     SIZED_REG(collect, linear),
     SIZED_REG(collect, all_linear),
     SIZED_REG(collect, all_linear1),
@@ -121,8 +112,7 @@ collect_tab[] = {
 };
 
 /* Familiar collect algorithms */
-static sized_op_t
-fcollect_tab[] = {
+static sized_op_t fcollect_tab[] = {
     SIZED_REG(fcollect, linear),
     SIZED_REG(fcollect, all_linear),
     SIZED_REG(fcollect, all_linear1),
@@ -137,8 +127,7 @@ fcollect_tab[] = {
 };
 
 /* Barrier_all algorithms (not size-dependent) */
-static unsized_op_t
-barrier_all_tab[] = {
+static unsized_op_t barrier_all_tab[] = {
     UNSIZED_REG(barrier_all, linear),
     UNSIZED_REG(barrier_all, complete_tree),
     UNSIZED_REG(barrier_all, binomial_tree),
@@ -148,8 +137,7 @@ barrier_all_tab[] = {
 };
 
 /* Sync_all algorithms (not size-dependent) */
-static unsized_op_t
-sync_all_tab[] = {
+static unsized_op_t sync_all_tab[] = {
     UNSIZED_REG(sync_all, linear),
     UNSIZED_REG(sync_all, complete_tree),
     UNSIZED_REG(sync_all, binomial_tree),
@@ -159,8 +147,7 @@ sync_all_tab[] = {
 };
 
 /* Barrier algorithms (not size-dependent) */
-static unsized_op_t
-barrier_tab[] = {
+static unsized_op_t barrier_tab[] = {
     UNSIZED_REG(barrier, linear),
     UNSIZED_REG(barrier, complete_tree),
     UNSIZED_REG(barrier, binomial_tree),
@@ -170,8 +157,7 @@ barrier_tab[] = {
 };
 
 /* Sync algorithms (not size-dependent) */
-static unsized_op_t
-sync_tab[] = {
+static unsized_op_t sync_tab[] = {
     UNSIZED_REG(sync, linear),
     UNSIZED_REG(sync, complete_tree),
     UNSIZED_REG(sync, binomial_tree),
@@ -180,102 +166,74 @@ sync_tab[] = {
     UNSIZED_LAST
 };
 
-/*
- * These functions search the tables defined above to find the
- * corresponding function(s) for the requested algorithm name.
- *
- * If the requested algorithm is found, the function pointers
- * are set and the function returns 0. Otherwise, it returns -1.
- */
-
-/*
- * Search for a sized operation (e.g., 32-bit and 64-bit variants)
- * and register the corresponding functions.
- */
-static int
-register_sized(sized_op_t *tabp,
-               const char *op,
-               coll_fn_t *fn32, coll_fn_t *fn64)
+/* Function to register a sized operation */
+static int register_sized(sized_op_t *tabp, const char *op, coll_fn_t *fn32, coll_fn_t *fn64)
 {
-    sized_op_t *p;
-
-    for (p = tabp; p->f32 != NULL; ++p) {
+    for (sized_op_t *p = tabp; p->f32 != NULL; ++p) {
         if (strncmp(op, p->op, COLL_NAME_MAX) == 0) {
             *fn32 = p->f32;
             *fn64 = p->f64;
             return 0;
-            /* NOT REACHED */
         }
     }
     return -1;
 }
 
-/*
- * Search for an unsized operation and register the corresponding function.
- */
-static int
-register_unsized(unsized_op_t *tabp,
-                 const char *op,
-                 coll_fn_t *fn)
+/* Function to register an unsized operation */
+static int register_unsized(unsized_op_t *tabp, const char *op, coll_fn_t *fn)
 {
-    unsized_op_t *p;
-
-    for (p = tabp; p->f != NULL; ++p) {
+    for (unsized_op_t *p = tabp; p->f != NULL; ++p) {
         if (strncmp(op, p->op, COLL_NAME_MAX) == 0) {
             *fn = p->f;
             return 0;
-            /* NOT REACHED */
         }
     }
     return -1;
 }
 
-/*
- * Global registry for collective operations.
- * This structure holds function pointers for the different
- * collective operations, allowing them to be dispatched
- * based on the selected algorithm.
- */
-coll_ops_t colls;
+/* Function to register a typed unsized operation */
+static int register_unsized_typed(unsized_typed_op_t *tabp, const char *op, const char *type, coll_fn_t *fn)
+{
+    for (unsized_typed_op_t *p = tabp; p->f != NULL; ++p) {
+        if (strncmp(op, p->op, COLL_NAME_MAX) == 0 && strncmp(type, p->type, COLL_NAME_MAX) == 0) {
+            *fn = p->f;
+            return 0;
+        }
+    }
+    return -1;
+}
 
-/*
- * Macros to define registration functions for the different
- * collective operations. These functions use the tables above
- * to look up and register the appropriate functions.
- */
-
-/* Register sized collective operations (e.g., all-to-all, broadcast) */
-#define REGISTER_SIZED(_coll)                       \
-    int                                             \
-    register_##_coll(const char *name)              \
-    {                                               \
-        return register_sized(_coll##_tab, name,    \
-                              &colls._coll.f32,     \
-                              &colls._coll.f64);    \
+/* Macro to register all-to-all with typed support */
+#define REGISTER_UNSIZED_TYPED(_coll)                                  \
+    int register_##_coll(const char *name, const char *type)           \
+    {                                                                  \
+        return register_unsized_typed(_coll##_tab, name, type, &colls._coll.f); \
     }
 
-/* Register unsized collective operations (e.g., barrier, sync) */
-#define REGISTER_UNSIZED(_coll)                          \
-    int                                                  \
-    register_##_coll(const char *name)                   \
-    {                                                    \
-        return register_unsized(_coll##_tab, name,       \
-                                &colls._coll.f);         \
+/* Register all-to-all operations */
+REGISTER_UNSIZED_TYPED(alltoall)
+
+/* Other collective operation registrations remain unchanged... */
+
+/* Macro to register sized collective operations */
+#define REGISTER_SIZED(_coll)                                           \
+    int register_##_coll(const char *name)                              \
+    {                                                                   \
+        return register_sized(_coll##_tab, name, &colls._coll.f32, &colls._coll.f64); \
     }
 
-/* Define the registration functions for all collective operations */
-////////////////////////////////////////////////////////////
-// XXX
-// REGISTER_SIZED(alltoall)
+/* Macro to register unsized collective operations */
+#define REGISTER_UNSIZED(_coll)                                         \
+    int register_##_coll(const char *name)                              \
+    {                                                                   \
+        return register_unsized(_coll##_tab, name, &colls._coll.f);     \
+    }
 
-REGISTER_UNSIZED(alltoall)
-
-////////////////////////////////////////////////////////////
+/* Register other collectives */
 REGISTER_SIZED(alltoalls)
 REGISTER_SIZED(broadcast)
 REGISTER_SIZED(collect)
 REGISTER_SIZED(fcollect)
-
 REGISTER_UNSIZED(barrier)
 REGISTER_UNSIZED(barrier_all)
 REGISTER_UNSIZED(sync)
