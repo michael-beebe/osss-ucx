@@ -111,18 +111,11 @@ static void initialize_psync_buffers(shmemc_team_h th) {
   /*
    * Use appropriate sync sizes for different collective operations:
    * pSyncs[0]: For team sync/barrier (SHMEM_BARRIER_SYNC_SIZE)
-   * pSyncs[1]: For broadcast operations (SHMEM_BCAST_SYNC_SIZE)
-   * pSyncs[2]: For collect/fcollect operations (SHMEM_COLLECT_SYNC_SIZE)
-   * pSyncs[3]: For alltoall/alltoalls operations (SHMEM_ALLTOALL_SYNC_SIZE)
-   * pSyncs[4]: For reduction operations (SHMEM_REDUCE_SYNC_SIZE)
+   * pSyncs[1]: For other collectives (SHMEM_REDUCE_SYNC_SIZE is the largest)
    */
   const size_t sync_sizes[SHMEMC_NUM_PSYNCS] = {
-      SHMEM_BARRIER_SYNC_SIZE,  /* pSyncs[0] for team sync/barrier */
-      SHMEM_BCAST_SYNC_SIZE,    /* pSyncs[1] for broadcast operations */
-      SHMEM_COLLECT_SYNC_SIZE,  /* pSyncs[2] for collect/fcollect operations */
-      SHMEM_ALLTOALL_SYNC_SIZE, /* pSyncs[3] for alltoall/alltoalls operations
-                                 */
-      SHMEM_REDUCE_SYNC_SIZE    /* pSyncs[4] for reduction operations */
+      SHMEM_BARRIER_SYNC_SIZE, /* pSyncs[0] for team sync/barrier */
+      SHMEM_REDUCE_SYNC_SIZE   /* pSyncs[1] for other collectives */
   };
 
   for (nsync = 0; nsync < SHMEMC_NUM_PSYNCS; ++nsync) {
@@ -174,12 +167,8 @@ int shmemc_team_reset_psync(shmemc_team_h th, unsigned psync_idx) {
 
   /* Get the appropriate size for this pSync buffer */
   const size_t sync_sizes[SHMEMC_NUM_PSYNCS] = {
-      SHMEM_BARRIER_SYNC_SIZE,  /* pSyncs[0] for team sync/barrier */
-      SHMEM_BCAST_SYNC_SIZE,    /* pSyncs[1] for broadcast operations */
-      SHMEM_COLLECT_SYNC_SIZE,  /* pSyncs[2] for collect/fcollect operations */
-      SHMEM_ALLTOALL_SYNC_SIZE, /* pSyncs[3] for alltoall/alltoalls operations
-                                 */
-      SHMEM_REDUCE_SYNC_SIZE    /* pSyncs[4] for reduction operations */
+      SHMEM_BARRIER_SYNC_SIZE, /* pSyncs[0] for team sync/barrier */
+      SHMEM_REDUCE_SYNC_SIZE   /* pSyncs[1] for other collectives */
   };
 
   /* Reset all elements to SHMEM_SYNC_VALUE */
@@ -222,20 +211,31 @@ long *shmemc_team_get_psync(shmemc_team_h th, int psync_type) {
     return NULL;
   }
 
-  if (psync_type < 0 || psync_type >= SHMEMC_NUM_PSYNCS) {
+  int psync_idx;
+  switch (psync_type) {
+  case SHMEMC_PSYNC_BARRIER:
+    psync_idx = SHMEMC_PSYNC_BARRIER;
+    break;
+  case SHMEMC_PSYNC_BROADCAST:
+  case SHMEMC_PSYNC_COLLECT:
+  case SHMEMC_PSYNC_ALLTOALL:
+  case SHMEMC_PSYNC_REDUCE:
+    psync_idx = SHMEMC_PSYNC_COLLECTIVE;
+    break;
+  default:
     shmemu_warn(
         "shmemc_team_get_psync: Invalid pSync type %d (valid range: 0-%d)",
         psync_type, SHMEMC_NUM_PSYNCS - 1);
     return NULL;
   }
 
-  if (th->pSyncs[psync_type] == NULL) {
+  if (th->pSyncs[psync_idx] == NULL) {
     shmemu_warn("shmemc_team_get_psync: pSync buffer for type %d is NULL",
                 psync_type);
     return NULL;
   }
 
-  return th->pSyncs[psync_type];
+  return th->pSyncs[psync_idx];
 }
 
 /**
