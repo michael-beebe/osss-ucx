@@ -211,23 +211,12 @@ long *shmemc_team_get_psync(shmemc_team_h th, int psync_type) {
     return NULL;
   }
 
-  int psync_idx;
-  switch (psync_type) {
-  case SHMEMC_PSYNC_BARRIER:
-    psync_idx = SHMEMC_PSYNC_BARRIER;
-    break;
-  case SHMEMC_PSYNC_BROADCAST:
-  case SHMEMC_PSYNC_COLLECT:
-  case SHMEMC_PSYNC_ALLTOALL:
-  case SHMEMC_PSYNC_REDUCE:
-    psync_idx = SHMEMC_PSYNC_COLLECTIVE;
-    break;
-  default:
-    shmemu_warn(
-        "shmemc_team_get_psync: Invalid pSync type %d (valid range: 0-%d)",
-        psync_type, SHMEMC_NUM_PSYNCS - 1);
-    return NULL;
+  if(psync_type < 0 || psync_type > SHMEMC_PSYNC_REDUCE) {
+      shmemu_warn(
+          "shmemc_team_get_psync: invalid psync type %d, assuming collective",
+          psync_type);
   }
+  int psync_idx = psync_type == 0 ? SHMEMC_PSYNC_BARRIER : SHMEMC_PSYNC_COLLECTIVE;
 
   if (th->pSyncs[psync_idx] == NULL) {
     shmemu_warn("shmemc_team_get_psync: pSync buffer for type %d is NULL",

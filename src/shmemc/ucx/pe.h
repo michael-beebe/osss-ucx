@@ -115,8 +115,7 @@ typedef struct shmemc_team {
                            NULL if predef */
 
   /* now need to add pSync arrays for collectives */
-#define SHMEMC_NUM_PSYNCS                                                      \
-  2 /* For barrier/sync and other collectives */
+#define SHMEMC_NUM_PSYNCS 2 /* For barrier/sync and other collectives */
 
   // clang-format off
 /* Symbolic constants for pSync buffer indices */

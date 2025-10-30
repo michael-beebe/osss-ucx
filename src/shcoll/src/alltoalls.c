@@ -419,7 +419,7 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_ALLTOALLS_TYPES)
     SHMEMU_CHECK_NULL(ps, "team_h->pSyncs[COLLECTIVE]");                         \
                                                                                \
     alltoalls_helper_##_algo(                                                  \
-        dest, source, dst, sst, elem_size, 1 /* nelems */, team_h->start,      \
+        dest, source, dst, sst, 1, elem_size, team_h->start,            \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks, ps);                                                   \
                                                                                \
