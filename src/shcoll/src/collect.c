@@ -241,7 +241,6 @@ inline static void collect_helper_rec_dbl(void *dest, const void *source,
 
     shmem_putmem_nbi((char *)dest + block_offset, (char *)dest + block_offset,
                      block_size, peer);
-    shmem_fence();
     shmem_size_p(block_sizes + i, block_size + 1 + SHCOLL_SYNC_VALUE, peer);
 
     shmem_size_wait_until(block_sizes + i, SHMEM_CMP_NE, SHCOLL_SYNC_VALUE);
@@ -359,7 +358,6 @@ inline static void collect_helper_ring(void *dest, const void *source,
 
     shmem_putmem_nbi(((char *)dest) + block_offset,
                      ((char *)dest) + block_offset, nbytes_round, send_to_pe);
-    shmem_fence();
 
     /* Wait until it's safe to use block_size buffer */
     shmem_long_wait_until(receiver_progress, SHMEM_CMP_GT,
@@ -444,8 +442,15 @@ inline static void collect_helper_bruck(void *dest, const void *source,
     total_nbytes = block_offset + nbytes;
   }
 
+
+  shmemu_warn(
+          "collect: pe %d calling broadcast_size",
+          me);
   broadcast_size(&total_nbytes, PE_start + (PE_size - 1) * stride, PE_start,
                  logPE_stride, PE_size, broadcast_pSync);
+  shmemu_warn(
+          "collect: pe %d done broadcast_size",
+          me);
 
   /* Copy the local block to the destination */
   memcpy(dest, source, nbytes);
@@ -664,7 +669,7 @@ SHCOLL_COLLECT_SIZE_DEFINITION(simple, 64)
                       "team_h->pSyncs[COLLECT]");                              \
                                                                                \
     /* FIXME: WE DO NOT WANT THIS SYNC TO BE HERE */                           \
-    shmem_team_sync(team_h);                                                   \
+    /* shmem_team_sync(team_h); */                                             \
                                                                                \
     collect_helper_##_algo(                                                    \
         dest, source, sizeof(_type) * nelems, /* total bytes per PE */         \
@@ -714,7 +719,7 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_COLLECT_TYPES)
                       "team_h->pSyncs[COLLECT]");                              \
                                                                                \
     /* FIXME: WE DO NOT WANT THIS SYNC TO BE HERE */                           \
-    shmem_team_sync(team_h);                                                   \
+    /* shmem_team_sync(team_h); */                                                   \
                                                                                \
     collect_helper_##_algo(                                                    \
         dest, source, nelems, /* total bytes per PE */                         \

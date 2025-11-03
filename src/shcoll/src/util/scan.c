@@ -32,7 +32,7 @@ void exclusive_prefix_sum(size_t *dest, size_t value, int PE_start,
                             SHCOLL_SYNC_VALUE);
       partial_scan += scan_rounds[round] - 1 - SHCOLL_SYNC_VALUE;
 
-      shmem_size_p(scan_rounds + round, SHCOLL_SYNC_VALUE, me);
+      shmem_size_atomic_set(scan_rounds + round, SHCOLL_SYNC_VALUE, me);
       shmem_size_wait_until(scan_rounds + round, SHMEM_CMP_EQ,
                             SHCOLL_SYNC_VALUE);
     }
