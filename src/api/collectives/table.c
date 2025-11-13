@@ -180,7 +180,7 @@ static typed_op_t alltoalls_type_tab[] = {
 #undef ALLTOALLS_TYPE_REG
 
 /**
- * @brief Table of generic alltoalls 
+ * @brief Table of generic alltoalls
  */
 static untyped_op_t alltoalls_mem_tab[] = {
     UNTYPED_REG(alltoallsmem, shift_exchange_barrier),
@@ -221,7 +221,7 @@ static typed_op_t collect_type_tab[] = {
 #undef COLLECT_TYPE_REG
 
 /**
- * @brief Table of generic collectmem 
+ * @brief Table of generic collectmem
  */
 static untyped_op_t collect_mem_tab[] = {
     UNTYPED_REG(collectmem, linear),
@@ -267,7 +267,7 @@ static typed_op_t fcollect_type_tab[] = {
 #undef FCOLLECT_TYPE_REG
 
 /**
- * @brief Table of generic fcollectmem 
+ * @brief Table of generic fcollectmem
  */
 static untyped_op_t fcollect_mem_tab[] = {
     UNTYPED_REG(fcollectmem, linear),
@@ -313,7 +313,7 @@ static typed_op_t broadcast_type_tab[] = {
 #undef BROADCAST_TYPE_REG
 
 /**
- * @brief Table of generic broadcastmem 
+ * @brief Table of generic broadcastmem
  */
 static untyped_op_t broadcast_mem_tab[] = {
     UNTYPED_REG(broadcastmem, linear),

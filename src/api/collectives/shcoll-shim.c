@@ -471,8 +471,8 @@ void shmem_alltoalls64(void *target, const void *source, ptrdiff_t dst,
 #define SHMEM_TYPENAME_COLLECT(_type, _typename)                               \
   int shmem_##_typename##_collect(shmem_team_t team, _type *dest,              \
                                   const _type *source, size_t nelems) {        \
-    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu)", __func__, team, dest, source,      \
-           nelems);                                                            \
+    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu)", __func__, team, dest,       \
+           source, nelems);                                                    \
     TYPED_CALL(collect_type, #_typename, team, dest, source, nelems);          \
   }
 
@@ -618,8 +618,8 @@ void shmem_collect64(void *target, const void *source, size_t nelems,
 #define SHMEM_TYPENAME_FCOLLECT(_type, _typename)                              \
   int shmem_##_typename##_fcollect(shmem_team_t team, _type *dest,             \
                                    const _type *source, size_t nelems) {       \
-    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu)", __func__, team, dest, source,      \
-           nelems);                                                            \
+    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu)", __func__, team, dest,       \
+           source, nelems);                                                    \
     TYPED_CALL(fcollect_type, #_typename, team, dest, source, nelems);         \
   }
 
@@ -768,8 +768,8 @@ void shmem_fcollect64(void *target, const void *source, size_t nelems,
   int shmem_##_typename##_broadcast(shmem_team_t team, _type *dest,            \
                                     const _type *source, size_t nelems,        \
                                     int PE_root) {                             \
-    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu, %d)", __func__, team, dest, source,  \
-           nelems, PE_root);                                                   \
+    logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu, %d)", __func__, team, dest,   \
+           source, nelems, PE_root);                                           \
     TYPED_CALL(broadcast_type, #_typename, team, dest, source, nelems,         \
                PE_root);                                                       \
   }
@@ -797,8 +797,8 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DECL_SHIM_BROADCAST)
  */
 int shmem_broadcastmem(shmem_team_t team, void *dest, const void *source,
                        size_t nelems, int PE_root) {
-  logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu, %d)", __func__, team, dest, source,
-         nelems, PE_root);
+  logger(LOG_COLLECTIVES, "%s(%p, %p, %p, %zu, %d)", __func__, team, dest,
+         source, nelems, PE_root);
   colls.broadcast_mem.f(team, dest, source, nelems, PE_root);
 }
 
