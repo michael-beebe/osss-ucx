@@ -660,7 +660,7 @@ SHCOLL_COLLECT_SIZE_DEFINITION(simple, 64)
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source,                                  \
                                 sizeof(_type) * nelems * team_h->nranks,       \
                                 sizeof(_type) * nelems);                       \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),     \
+    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
                       "team_h->pSyncs[COLLECT]");                              \
                                                                                \
     /* FIXME: WE DO NOT WANT THIS SYNC TO BE HERE */                           \
@@ -670,9 +670,10 @@ SHCOLL_COLLECT_SIZE_DEFINITION(simple, 64)
         dest, source, sizeof(_type) * nelems, /* total bytes per PE */         \
         team_h->start,                                                         \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
-        team_h->nranks, shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));  \
+        team_h->nranks,                                                        \
+        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                     \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
                                                                                \
     return 0;                                                                  \
   }
@@ -710,7 +711,7 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_COLLECT_TYPES)
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, nelems * team_h->nranks,         \
                                 nelems);                                       \
                                                                                \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),     \
+    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
                       "team_h->pSyncs[COLLECT]");                              \
                                                                                \
     /* FIXME: WE DO NOT WANT THIS SYNC TO BE HERE */                           \
@@ -720,9 +721,10 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_COLLECT_TYPES)
         dest, source, nelems, /* total bytes per PE */                         \
         team_h->start,                                                         \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
-        team_h->nranks, shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));  \
+        team_h->nranks,                                                        \
+        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                     \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
                                                                                \
     return 0;                                                                  \
   }

@@ -1084,8 +1084,8 @@ TO_ALL_WRAPPER_ALL(rabenseifner2)
     SHMEMU_CHECK_SYMMETRIC(source, "source");                                  \
     shmemc_team_h team_h = (shmemc_team_h)team;                                \
     SHMEMU_CHECK_TEAM_STRIDE(team_h->stride, __func__);                        \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),      \
-                      "team_h->pSyncs[COLLECTIVE]");                               \
+    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
+                      "team_h->pSyncs[COLLECTIVE]");                           \
                                                                                \
     _type *pWrk =                                                              \
         shmem_malloc(SHCOLL_REDUCE_MIN_WRKDATA_SIZE * sizeof(_type));          \
@@ -1094,9 +1094,9 @@ TO_ALL_WRAPPER_ALL(rabenseifner2)
         dest, source, nreduce, team_h->start,                                  \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks, pWrk,                                                  \
-        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));                   \
+        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                      \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
     shmem_free(pWrk);                                                          \
     return 0;                                                                  \
   }

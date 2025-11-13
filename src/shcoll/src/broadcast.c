@@ -524,8 +524,8 @@ SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 64)
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, sizeof(_type) * nelems,          \
                                 sizeof(_type) * nelems);                       \
                                                                                \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),   \
-                      "team_h->pSyncs[COLLECTIVE]");                            \
+    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
+                      "team_h->pSyncs[COLLECTIVE]");                           \
                                                                                \
     /* Initialize dest: root PE copies source, others leave dest as-is */      \
     /* The broadcast operation will overwrite dest on all PEs */               \
@@ -537,9 +537,9 @@ SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 64)
         dest, source, nelems * sizeof(_type), PE_root, team_h->start,          \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks,                                                        \
-        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));                \
+        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                   \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
                                                                                \
     return 0;                                                                  \
   }
@@ -571,8 +571,8 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_BROADCAST_TYPES)
     SHMEMU_CHECK_SYMMETRIC(dest, nelems * team_h->nranks);                     \
     SHMEMU_CHECK_SYMMETRIC(source, nelems * team_h->nranks);                   \
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, nelems, nelems);                 \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),   \
-                      "team_h->pSyncs[COLLECTIVE]");                            \
+    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
+                      "team_h->pSyncs[COLLECTIVE]");                           \
                                                                                \
     /* Initialize dest: root PE copies source, others leave dest as-is */      \
     /* The broadcast operation will overwrite dest on all PEs */               \
@@ -583,9 +583,9 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_BROADCAST_TYPES)
         dest, source, nelems, PE_root, team_h->start,                          \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks,                                                        \
-        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));                \
+        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                   \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
                                                                                \
     return 0;                                                                  \
   }

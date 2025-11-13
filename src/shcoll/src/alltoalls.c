@@ -363,15 +363,15 @@ SHCOLL_ALLTOALLS_SIZE_DEFINITION(color_pairwise_exchange_counter, 64)
     SHMEMU_CHECK_SYMMETRIC(dest, need_dst);                                    \
     SHMEMU_CHECK_SYMMETRIC(source, need_src);                                  \
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, need_dst, need_src);             \
-    long *ps = shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);           \
-    SHMEMU_CHECK_NULL(ps, "team_h->pSyncs[COLLECTIVE]");                         \
+    long *ps = shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);         \
+    SHMEMU_CHECK_NULL(ps, "team_h->pSyncs[COLLECTIVE]");                       \
                                                                                \
     alltoalls_helper_##_algo(                                                  \
         dest, source, dst, sst, sizeof(_type), nelems, team_h->start,          \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks, ps);                                                   \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                    \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
     return 0;                                                                  \
   }
 
@@ -415,15 +415,15 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_ALLTOALLS_TYPES)
     SHMEMU_CHECK_SYMMETRIC(dest, need_dst);                                    \
     SHMEMU_CHECK_SYMMETRIC(source, need_src);                                  \
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, need_dst, need_src);             \
-    long *ps = shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);           \
-    SHMEMU_CHECK_NULL(ps, "team_h->pSyncs[COLLECTIVE]");                         \
+    long *ps = shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);         \
+    SHMEMU_CHECK_NULL(ps, "team_h->pSyncs[COLLECTIVE]");                       \
                                                                                \
     alltoalls_helper_##_algo(                                                  \
-        dest, source, dst, sst, 1, elem_size, team_h->start,            \
+        dest, source, dst, sst, 1, elem_size, team_h->start,                   \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
         team_h->nranks, ps);                                                   \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                    \
+    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
     return 0;                                                                  \
   }
 

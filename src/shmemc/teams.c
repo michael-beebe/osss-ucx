@@ -211,12 +211,13 @@ long *shmemc_team_get_psync(shmemc_team_h th, int psync_type) {
     return NULL;
   }
 
-  if(psync_type < 0 || psync_type > SHMEMC_PSYNC_REDUCE) {
-      shmemu_warn(
-          "shmemc_team_get_psync: invalid psync type %d, assuming collective",
-          psync_type);
+  if (psync_type < 0 || psync_type > SHMEMC_PSYNC_REDUCE) {
+    shmemu_warn(
+        "shmemc_team_get_psync: invalid psync type %d, assuming collective",
+        psync_type);
   }
-  int psync_idx = psync_type == 0 ? SHMEMC_PSYNC_BARRIER : SHMEMC_PSYNC_COLLECTIVE;
+  int psync_idx =
+      psync_type == 0 ? SHMEMC_PSYNC_BARRIER : SHMEMC_PSYNC_COLLECTIVE;
 
   if (th->pSyncs[psync_idx] == NULL) {
     shmemu_warn("shmemc_team_get_psync: pSync buffer for type %d is NULL",
