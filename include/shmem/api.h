@@ -1318,6 +1318,29 @@ void shmem_fence(void);
 void shmem_ctx_quiet(shmem_ctx_t ctx);
 void shmem_quiet(void);
 
+
+/**
+ * @brief causes outbound communication to complete before
+ * subsequent puts are sent for a subset of PEs.
+ * @page shmem_ctx_quiet
+ * @section Synopsis
+ *
+ * @subsection c C/C++
+ @code
+ void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
+ void shmem_pe_quiet(const int *target_pes, size_t npes);
+ @endcode
+ *
+ * @section Effect
+ * Remote completion
+ *
+ * @section Return
+ * None.
+ *
+ */
+ void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
+ void shmem_pe_quiet(const int *target_pes, size_t npes);
+
 ////////////////////////////////////////////////////////////////////////////////
 /*
  * accessibility

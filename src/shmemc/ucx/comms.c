@@ -14,6 +14,7 @@
 
 #include "shmem/defs.h"
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -224,6 +225,43 @@ void shmemc_ctx_quiet(shmem_ctx_t ctx) {
                     ucs_status_string(s));
     }
   }
+}
+
+void shmemc_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes) {
+  if (ctx == SHMEM_CTX_INVALID) {
+    return;
+  }
+
+  shmemc_context_h ch = (shmemc_context_h)ctx;
+  if (ch->attr.nostore) {
+    return;
+  }
+
+#ifdef HAVE_UCP_EP_FLUSH_NBX
+  const ucp_request_param_t prm = {.op_attr_mask = 0};
+
+  ucs_status_ptr_t *reqs = malloc(npes * sizeof(*reqs));
+  shmemu_assert(reqs != NULL, MODULE ": %s() failed to allocate request array",
+                __func__);
+
+  for (size_t i = 0; i < npes; i++) {
+    reqs[i] = ucp_ep_flush_nbx(ch->eps[target_pes[i]], &prm);
+  }
+
+  for (size_t i = 0; i < npes; i++) {
+    const ucs_status_t s = check_wait_for_request(ch, reqs[i]);
+    shmemu_assert(s == UCS_OK, MODULE ": %s() failed (status: %s)", __func__,
+                  ucs_status_string(s));
+  }
+
+  free(reqs);
+#else
+  for (size_t i = 0; i < npes; i++) {
+    s = ucp_worker_flush(ch->w);
+    shmemu_assert(s == UCS_OK, MODULE ": %s() failed (status: %s)", __func__,
+                  ucs_status_string(s));
+  }
+#endif /* HAVE_UCP_EP_FLUSH_NBX */
 }
 
 #ifdef ENABLE_EXPERIMENTAL

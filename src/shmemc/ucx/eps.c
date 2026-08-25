@@ -87,7 +87,7 @@ static void ep_wait(shmemc_context_h ch, ucs_status_ptr_t req) {
  */
 
 void shmemc_ucx_disconnect_all_eps(shmemc_context_h ch) {
-  int i;
+  int i; 
   ucs_status_ptr_t *reqs;
 
   reqs = (ucs_status_ptr_t *)malloc(proc.li.nranks * sizeof(*reqs));

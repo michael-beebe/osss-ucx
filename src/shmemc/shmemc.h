@@ -72,6 +72,7 @@ void shmemc_progress(void);
 
 void shmemc_ctx_fence(shmem_ctx_t ctx);
 void shmemc_ctx_quiet(shmem_ctx_t ctx);
+void shmemc_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
 
 #ifdef ENABLE_EXPERIMENTAL
 
