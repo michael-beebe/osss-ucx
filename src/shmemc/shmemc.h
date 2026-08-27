@@ -129,6 +129,8 @@ int shmemc_team_translate_pe(shmemc_team_h sh, int src_pe, shmemc_team_h dh);
 
 int shmemc_team_pe_to_world(shmemc_team_h sh, int src_pe);
 
+void *shmemc_team_ptr(shmemc_team_h th, const void *dest, int pe);
+
 int shmemc_team_split_strided(shmemc_team_h parh, int start, int stride,
                               int size, const shmem_team_config_t *config,
                               long config_mask, shmemc_team_h *newh);

@@ -133,8 +133,8 @@ int shmem_team_sync(shmem_team_t team);
  * @param team Team containing the PE
  * @param dest Symmetric data object on remote PE
  * @param pe PE number in the team
- * @return Pointer to remote data object
+ * @return Local pointer to remote data object
  */
-void *shmem_team_ptr(shmem_team_t team, const void *dest, int pe);
+void *shmem_team_ptr(shmem_team_t team, const void *dest, int pe) _WUR;
 
 #endif /* ! _SHMEM_API_TEAMS_H */

@@ -339,6 +339,15 @@ static void finalize_team(shmemc_team_h th) {
   finalize_psync_buffers(th);
 
   shmemc_team_contexts_destroy(th);
+
+  if (th->fwd != NULL) {
+    kh_destroy(map, th->fwd);
+    th->fwd = NULL;
+  }
+  if (th->rev != NULL) {
+    kh_destroy(map, th->rev);
+    th->rev = NULL;
+  }
 }
 
 /**
@@ -500,9 +509,75 @@ int shmemc_team_split_strided(shmemc_team_h parh, int start, int stride,
   int absent;
   int nc;
 
+  if (newh == NULL) {
+    return -1;
+  }
+
+  /* Validate parent team */
+  if (parh == NULL || parh == invalid) {
+    *newh = invalid;
+    return -1;
+  }
+
+  /* Validate size */
+  if (size <= 0) {
+    *newh = invalid;
+    return -1;
+  }
+
+  /* If stride is 0, size must be 1 */
+  if (stride == 0 && size != 1) {
+    *newh = invalid;
+    return -1;
+  }
+
+  /* Validate triplet range within parent team */
+  int parent_size = parh->nranks;
+  int last_pe = start + stride * (size - 1);
+  if (start < 0 || start >= parent_size || last_pe < 0 ||
+      last_pe >= parent_size) {
+    *newh = invalid;
+    return -1;
+  }
+
+  /* Check if the calling PE is a member of the new team */
+  int my_pe_in_parent = parh->rank;
+  int my_team_rank = -1;
+
+  if (my_pe_in_parent >= 0) {
+    if (stride == 0) {
+      if (my_pe_in_parent == start) {
+        my_team_rank = 0;
+      }
+    } else if (stride > 0) {
+      if (my_pe_in_parent >= start &&
+          ((my_pe_in_parent - start) % stride) == 0) {
+        int r = (my_pe_in_parent - start) / stride;
+        if (r < size) {
+          my_team_rank = r;
+        }
+      }
+    } else { /* stride < 0 */
+      if (my_pe_in_parent <= start &&
+          ((start - my_pe_in_parent) % (-stride)) == 0) {
+        int r = (start - my_pe_in_parent) / (-stride);
+        if (r < size) {
+          my_team_rank = r;
+        }
+      }
+    }
+  }
+
+  /* If calling PE is not in the new team, return SHMEM_TEAM_INVALID (NULL) and
+   * 0 per spec */
+  if (my_team_rank == -1) {
+    *newh = invalid;
+    return 0;
+  }
+
   newt = (shmemc_team_h)malloc(sizeof(*newt));
   if (newt == NULL) {
-    *newh = SHMEM_TEAM_INVALID;
+    *newh = invalid;
     return -1;
   }
 
@@ -512,11 +587,26 @@ int shmemc_team_split_strided(shmemc_team_h parh, int start, int stride,
 
   newt->parent = parh;
   newt->nranks = size;
-  newt->start = start;   /* Store the start PE */
-  newt->stride = stride; /* Store the stride */
+  newt->rank = my_team_rank;
 
-  /* Initialize rank to -1 (invalid) */
-  newt->rank = -1;
+  /* Calculate global start and stride for new team */
+  int global_pe_0 = -1;
+  int global_pe_1 = -1;
+
+  khint_t k0 = kh_get(map, parh->fwd, start);
+  if (k0 != kh_end(parh->fwd)) {
+    global_pe_0 = kh_val(parh->fwd, k0);
+  }
+  if (size > 1) {
+    khint_t k1 = kh_get(map, parh->fwd, start + stride);
+    if (k1 != kh_end(parh->fwd)) {
+      global_pe_1 = kh_val(parh->fwd, k1);
+    }
+  }
+
+  newt->start = global_pe_0;
+  newt->stride =
+      (size > 1 && global_pe_1 != -1) ? (global_pe_1 - global_pe_0) : stride;
 
   walk = start;
   for (i = 0; i < size; ++i) {
@@ -525,10 +615,16 @@ int shmemc_team_split_strided(shmemc_team_h parh, int start, int stride,
     /* Get the parent PE at position 'walk' */
     k = kh_get(map, parh->fwd, walk);
     if (k == kh_end(parh->fwd)) {
-      /* This shouldn't happen if parameters are valid */
       shmemu_warn("Parent PE %d not found in forward map", walk);
+      finalize_psync_buffers(newt);
+      if (newt->fwd != NULL) {
+        kh_destroy(map, newt->fwd);
+      }
+      if (newt->rev != NULL) {
+        kh_destroy(map, newt->rev);
+      }
       free(newt);
-      *newh = SHMEM_TEAM_INVALID;
+      *newh = invalid;
       return -1;
     }
 
@@ -541,18 +637,8 @@ int shmemc_team_split_strided(shmemc_team_h parh, int start, int stride,
     k = kh_put(map, newt->rev, global_pe, &absent);
     kh_val(newt->rev, k) = i;
 
-    /* If this global PE is me, set my rank in the team */
-    if (global_pe == proc.li.rank) {
-      newt->rank = i;
-    }
-
     walk += stride;
   }
-
-  /* Verify that the calling PE is part of the team */
-  // if (newt->rank == -1) {
-  //   shmemu_warn("Calling PE %d is not part of the new team", proc.li.rank);
-  // }
 
   *newh = newt;
 
@@ -772,14 +858,28 @@ int shmemc_team_split_2d(shmemc_team_h parh, int xrange,
 cleanup:
   /* Clean up in case of error */
   if (xaxis_team != NULL) {
+    finalize_psync_buffers(xaxis_team);
+    if (xaxis_team->fwd != NULL) {
+      kh_destroy(map, xaxis_team->fwd);
+    }
+    if (xaxis_team->rev != NULL) {
+      kh_destroy(map, xaxis_team->rev);
+    }
     free(xaxis_team);
   }
   if (yaxis_team != NULL) {
+    finalize_psync_buffers(yaxis_team);
+    if (yaxis_team->fwd != NULL) {
+      kh_destroy(map, yaxis_team->fwd);
+    }
+    if (yaxis_team->rev != NULL) {
+      kh_destroy(map, yaxis_team->rev);
+    }
     free(yaxis_team);
   }
 
-  *xaxish = SHMEM_TEAM_INVALID;
-  *yaxish = SHMEM_TEAM_INVALID;
+  *xaxish = invalid;
+  *yaxish = invalid;
   return -1;
 }
 
@@ -793,6 +893,9 @@ cleanup:
  * @note Predefined teams cannot be destroyed
  */
 void shmemc_team_destroy(shmemc_team_h th) {
+  if (th == NULL) {
+    return;
+  }
   if (th->parent != NULL) {
     size_t c;
 
@@ -801,10 +904,24 @@ void shmemc_team_destroy(shmemc_team_h th) {
         shmemc_context_destroy(th->ctxts[c]);
       }
     }
+    if (th->ctxts != NULL) {
+      free(th->ctxts);
+      th->ctxts = NULL;
+      th->nctxts = 0;
+    }
+
+    finalize_psync_buffers(th);
+
+    if (th->fwd != NULL) {
+      kh_destroy(map, th->fwd);
+      th->fwd = NULL;
+    }
+    if (th->rev != NULL) {
+      kh_destroy(map, th->rev);
+      th->rev = NULL;
+    }
 
     free(th);
-
-    th = invalid;
   } else {
     shmemu_fatal("cannot destroy predefined team \"%s\"", th->name);
     /* NOT REACHED */
@@ -850,28 +967,32 @@ int shmemc_team_sync(shmemc_team_h th) {
   return 0;
 }
 
-// /**
-//  * @brief Implementation of team-relative pointer access
-//  *
-//  * @param th The team handle
-//  * @param dest The symmetric address of the remotely accessible data object
-//  * @param pe Team-relative PE number
-//  * @return Pointer to the remote object or NULL if not accessible
-//  */
-// void *shmemc_team_ptr(shmemc_team_h th, const void *dest, int pe) {
-//   int global_pe;
+/**
+ * @brief Implementation of team-relative pointer access
+ *
+ * @param th The team handle
+ * @param dest The symmetric address of the remotely accessible data object
+ * @param pe Team-relative PE number
+ * @return Pointer to the remote object or NULL if not accessible
+ */
+void *shmemc_team_ptr(shmemc_team_h th, const void *dest, int pe) {
+  int global_pe;
 
-//   /* Validate the PE is within team range */
-//   if (pe < 0 || pe >= th->nranks) {
-//     return NULL;
-//   }
+  if (th == NULL) {
+    return NULL;
+  }
 
-//   /* Convert team-relative PE to global PE */
-//   global_pe = shmemc_team_translate_pe(th, pe, &shmemc_team_world);
-//   if (global_pe < 0) {
-//     return NULL;
-//   }
+  /* Validate the PE is within team range */
+  if (pe < 0 || pe >= th->nranks) {
+    return NULL;
+  }
 
-//   /* Call the original shmemc_ptr function with the global PE */
-//   return shmemc_ptr(dest, global_pe);
-// }
+  /* Convert team-relative PE to global PE */
+  global_pe = shmemc_team_pe_to_world(th, pe);
+  if (global_pe < 0) {
+    return NULL;
+  }
+
+  /* Call the original shmemc_ptr function with the global PE */
+  return shmemc_ptr(dest, global_pe);
+}
