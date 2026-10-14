@@ -118,9 +118,11 @@ inline static void publish_one_heap(size_t r) {
 void shmemc_pmi_publish_rkeys_and_heaps(void) {
   size_t r;
 
-  publish_one_rkeys(0);
-
-  for (r = 1; r < proc.comms.nregions; ++r) {
+  /*
+   * globals (region 0) also need their base published: PIE executables
+   * under ASLR place the data segment at different addresses per PE
+   */
+  for (r = 0; r < proc.comms.nregions; ++r) {
     publish_one_rkeys(r);
 
 #ifndef ENABLE_ALIGNED_ADDRESSES
@@ -230,14 +232,6 @@ inline static void exchange_one_rkeys(size_t r, int pe) {
   PMIX_VALUE_RELEASE(vp);
 }
 
-inline static void exchange_all_rkeys(size_t r) {
-  int pe;
-
-  for (pe = 0; pe < proc.li.nranks; ++pe) {
-    exchange_one_rkeys(r, pe);
-  }
-}
-
 inline static void exchange_one_rkeys_and_heaps(size_t r) {
   int pe;
 
@@ -253,11 +247,8 @@ inline static void exchange_one_rkeys_and_heaps(size_t r) {
 void shmemc_pmi_exchange_rkeys_and_heaps(void) {
   size_t r;
 
-  /* global rkeys */
-  exchange_all_rkeys(0);
-
-  /* now everything else */
-  for (r = 1; r < proc.comms.nregions; ++r) {
+  /* globals (region 0) and heaps */
+  for (r = 0; r < proc.comms.nregions; ++r) {
     exchange_one_rkeys_and_heaps(r);
   }
 }

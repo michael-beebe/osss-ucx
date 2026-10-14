@@ -79,8 +79,8 @@ inline static long lookup_region(uint64_t addr) {
  *
  * if all addresses aligned, remote always == local
  *
- * otherwise globals are always aligned, but translate shmalloc'ed
- * variables
+ * otherwise translate both globals and shmalloc'ed variables (PIE
+ * executables under ASLR load globals at different addresses per PE)
  */
 #ifdef ENABLE_ALIGNED_ADDRESSES
 
@@ -99,17 +99,13 @@ inline static size_t get_base(size_t region, int pe) {
 
 inline static uint64_t translate_region_address(uint64_t local_addr,
                                                 size_t region, int pe) {
-  if (region == 0) {
-    return local_addr;
-  } else {
-    const long my_offset = local_addr - get_base(region, proc.li.rank);
+  const long my_offset = local_addr - get_base(region, proc.li.rank);
 
-    if (my_offset < 0) {
-      return 0;
-    }
-
-    return my_offset + get_base(region, pe);
+  if (my_offset < 0) {
+    return 0;
   }
+
+  return my_offset + get_base(region, pe);
 }
 
 inline static uint64_t translate_address(uint64_t local_addr, int pe) {
@@ -157,13 +153,20 @@ inline static ucs_status_t check_wait_for_request(shmemc_context_h ch,
   if (req == NULL) { /* completed */
     return UCS_OK;
   } else if (UCS_PTR_IS_ERR(req)) {
-    ucp_request_cancel(ch->w, req);
+    /* error pointers are not requests; there is nothing to cancel or free */
     return UCS_PTR_STATUS(req);
   } else { /* wait for completion */
     ucs_status_t s;
 
     do {
       ucp_worker_progress(ch->w);
+      /*
+       * peers' contexts target this PE's default worker, so keep it
+       * moving while blocked; otherwise mutual software AMOs deadlock
+       */
+      if (ch != defcp) {
+        ucp_worker_progress(defcp->w);
+      }
 
       s = UCX_REQUEST_CHECK(req);
     } while (s == UCS_INPROGRESS);
