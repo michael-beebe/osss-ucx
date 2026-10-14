@@ -249,6 +249,7 @@ static void initialize_common_team(shmemc_team_h th, const char *name,
 
   /* nothing allocated yet */
   th->nctxts = 0;
+  th->ctxts_cap = 0;
   th->ctxts = NULL;
 
   th->cfg.num_contexts = cfg_nctxts;
@@ -797,7 +798,7 @@ void shmemc_team_destroy(shmemc_team_h th) {
     size_t c;
 
     for (c = 0; c < th->nctxts; ++c) {
-      if (!th->ctxts[c]->attr.privat) {
+      if (!th->ctxts[c]->attr.privat && !th->ctxts[c]->attr.freed) {
         shmemc_context_destroy(th->ctxts[c]);
       }
     }

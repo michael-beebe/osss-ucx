@@ -110,6 +110,7 @@ typedef struct shmemc_team {
 
   shmemc_context_h *ctxts; /**< array of contexts in this team */
   size_t nctxts;           /**< how many contexts allocated */
+  size_t ctxts_cap;        /**< slots available in ctxts */
 
   shmemc_team_h parent; /**< parent team we split from,
                            NULL if predef */
@@ -139,6 +140,7 @@ typedef struct shmemc_context_attr {
   bool serialized;
   bool privat; /* "private" is c++ keyword */
   bool nostore;
+  bool freed; /* destroyed and available for reuse in its team */
 } shmemc_context_attr_t;
 
 /**

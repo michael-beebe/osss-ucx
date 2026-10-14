@@ -18,42 +18,9 @@
 #include "shmemu.h"
 #include "boolean.h"
 #include "shmem/defs.h"
-#include "../klib/klist.h"
 #include "ucx/api.h"
 
 #include <stdlib.h>
-
-/**
- * @brief Manage free list of re-usable contexts
- */
-
-#define __size_t_free(x)
-
-KLIST_INIT(freelist, size_t, __size_t_free)
-
-static klist_t(freelist) *fl = NULL;
-
-/**
- * @brief Register and de-register contexts
- *
- * First call performs initialization, then reroutes to real work
- */
-
-static size_t get_usable_context_boot(shmemc_team_h th, bool *reused);
-static size_t get_usable_context_run(shmemc_team_h th, bool *reused);
-
-static size_t (*get_usable_context)(shmemc_team_h th,
-                                    bool *reused) = get_usable_context_boot;
-
-/**
- * @brief Number of additional contexts to allocate when current block is full
- */
-static size_t spill_block;
-
-/**
- * @brief Total number of context slots allocated
- */
-static size_t spill_ctxt = 0;
 
 /**
  * @brief Resize the context array block
@@ -92,63 +59,41 @@ inline static shmemc_context_h alloc_freelist_slot(void) {
 }
 
 /**
- * @brief Initialize context system on first use
+ * @brief Get a usable context slot in a team, reusing a freed one if possible
+ *
+ * Slot capacity and reuse are tracked per team: context ids index the
+ * owning team's array, so slots cannot be shared between teams.
  *
  * @param th Team handle
  * @param reused Set to true if context was reused
  * @return Index of allocated context
  */
-static size_t get_usable_context_boot(shmemc_team_h th, bool *reused) {
-  fl = kl_init(freelist);
-
-  /* pre-alloc */
-  spill_block = proc.env.prealloc_contexts;
-  th->ctxts = resize_spill_block(th, spill_block);
-
-  get_usable_context = get_usable_context_run;
-
-  return get_usable_context(th, reused);
-}
-
-/**
- * @brief Get a usable context, either from freelist or by allocation
- *
- * @param th Team handle
- * @param reused Set to true if context was reused
- * @return Index of allocated context
- */
-static size_t get_usable_context_run(shmemc_team_h th, bool *reused) {
+static size_t get_usable_context(shmemc_team_h th, bool *reused) {
   size_t idx;
-  kliter_t(freelist) *head = kl_begin(fl);
 
-  if (head == kl_end(fl)) { /* nothing in free list */
-    idx = th->nctxts;
-
-    /* if out of space, grab some more slots */
-    if (idx == spill_ctxt) {
-      spill_ctxt += spill_block;
-
-      th->ctxts = resize_spill_block(th, spill_ctxt);
-
-      if (th->ctxts == NULL) {
-        shmemu_fatal("can't allocate more memory "
-                     "for context freelist");
-        /* NOT REACHED */
-      }
+  for (idx = 0; idx < th->nctxts; ++idx) {
+    if (th->ctxts[idx]->attr.freed) {
+      logger(LOG_CONTEXTS, "reclaiming context #%lu from free list",
+             (unsigned long)idx);
+      *reused = true;
+      return idx;
     }
-
-    /* allocate context in current slot */
-    th->ctxts[idx] = alloc_freelist_slot();
-
-    ++th->nctxts; /* for next one */
-    *reused = false;
-  } else { /* grab & remove the head of the freelist */
-    idx = kl_val(head);
-    kl_shift(freelist, fl, NULL);
-    logger(LOG_CONTEXTS, "reclaiming context #%lu from free list",
-           (unsigned long)idx);
-    *reused = true;
   }
+
+  /* if out of space, grab some more slots */
+  if (idx == th->ctxts_cap) {
+    const size_t block =
+        proc.env.prealloc_contexts > 0 ? proc.env.prealloc_contexts : 1;
+
+    th->ctxts_cap += block;
+    th->ctxts = resize_spill_block(th, th->ctxts_cap);
+  }
+
+  /* allocate context in current slot */
+  th->ctxts[idx] = alloc_freelist_slot();
+
+  ++th->nctxts; /* for next one */
+  *reused = false;
   return idx;
 }
 
@@ -170,7 +115,7 @@ inline static void context_register(shmemc_context_h ch) {
  */
 inline static void context_deregister(shmemc_context_h ch) {
   /* this one is re-usable */
-  *kl_pushp(freelist, fl) = ch->id;
+  ch->attr.freed = true;
 
   logger(LOG_CONTEXTS, "context #%lu can be reused", ch->id);
 }
@@ -221,6 +166,7 @@ int shmemc_context_create(shmemc_team_h th, long options,
 
   /* set SHMEM context behavior */
   context_set_options(options, ch);
+  ch->attr.freed = false;
 
   /* is this reclaimed from free list or do we have to set up? */
   if (!reuse) {
