@@ -588,6 +588,68 @@ SHMEM_CTX_PUTMEM_NBI()
 /**
  * @brief Typed put operations
  */
+/* Profiling entry points for default-context interleaved transfers. */
+#ifdef ENABLE_PSHMEM
+#pragma weak shmem_float_ibput = pshmem_float_ibput
+#define shmem_float_ibput pshmem_float_ibput
+#pragma weak shmem_double_ibput = pshmem_double_ibput
+#define shmem_double_ibput pshmem_double_ibput
+#pragma weak shmem_longdouble_ibput = pshmem_longdouble_ibput
+#define shmem_longdouble_ibput pshmem_longdouble_ibput
+#pragma weak shmem_char_ibput = pshmem_char_ibput
+#define shmem_char_ibput pshmem_char_ibput
+#pragma weak shmem_schar_ibput = pshmem_schar_ibput
+#define shmem_schar_ibput pshmem_schar_ibput
+#pragma weak shmem_short_ibput = pshmem_short_ibput
+#define shmem_short_ibput pshmem_short_ibput
+#pragma weak shmem_int_ibput = pshmem_int_ibput
+#define shmem_int_ibput pshmem_int_ibput
+#pragma weak shmem_long_ibput = pshmem_long_ibput
+#define shmem_long_ibput pshmem_long_ibput
+#pragma weak shmem_longlong_ibput = pshmem_longlong_ibput
+#define shmem_longlong_ibput pshmem_longlong_ibput
+#pragma weak shmem_uchar_ibput = pshmem_uchar_ibput
+#define shmem_uchar_ibput pshmem_uchar_ibput
+#pragma weak shmem_ushort_ibput = pshmem_ushort_ibput
+#define shmem_ushort_ibput pshmem_ushort_ibput
+#pragma weak shmem_uint_ibput = pshmem_uint_ibput
+#define shmem_uint_ibput pshmem_uint_ibput
+#pragma weak shmem_ulong_ibput = pshmem_ulong_ibput
+#define shmem_ulong_ibput pshmem_ulong_ibput
+#pragma weak shmem_ulonglong_ibput = pshmem_ulonglong_ibput
+#define shmem_ulonglong_ibput pshmem_ulonglong_ibput
+#pragma weak shmem_int8_ibput = pshmem_int8_ibput
+#define shmem_int8_ibput pshmem_int8_ibput
+#pragma weak shmem_int16_ibput = pshmem_int16_ibput
+#define shmem_int16_ibput pshmem_int16_ibput
+#pragma weak shmem_int32_ibput = pshmem_int32_ibput
+#define shmem_int32_ibput pshmem_int32_ibput
+#pragma weak shmem_int64_ibput = pshmem_int64_ibput
+#define shmem_int64_ibput pshmem_int64_ibput
+#pragma weak shmem_uint8_ibput = pshmem_uint8_ibput
+#define shmem_uint8_ibput pshmem_uint8_ibput
+#pragma weak shmem_uint16_ibput = pshmem_uint16_ibput
+#define shmem_uint16_ibput pshmem_uint16_ibput
+#pragma weak shmem_uint32_ibput = pshmem_uint32_ibput
+#define shmem_uint32_ibput pshmem_uint32_ibput
+#pragma weak shmem_uint64_ibput = pshmem_uint64_ibput
+#define shmem_uint64_ibput pshmem_uint64_ibput
+#pragma weak shmem_size_ibput = pshmem_size_ibput
+#define shmem_size_ibput pshmem_size_ibput
+#pragma weak shmem_ptrdiff_ibput = pshmem_ptrdiff_ibput
+#define shmem_ptrdiff_ibput pshmem_ptrdiff_ibput
+#pragma weak shmem_ibput8 = pshmem_ibput8
+#define shmem_ibput8 pshmem_ibput8
+#pragma weak shmem_ibput16 = pshmem_ibput16
+#define shmem_ibput16 pshmem_ibput16
+#pragma weak shmem_ibput32 = pshmem_ibput32
+#define shmem_ibput32 pshmem_ibput32
+#pragma weak shmem_ibput64 = pshmem_ibput64
+#define shmem_ibput64 pshmem_ibput64
+#pragma weak shmem_ibput128 = pshmem_ibput128
+#define shmem_ibput128 pshmem_ibput128
+#endif /* ENABLE_PSHMEM */
+
 #define API_PUT_TYPE_HELPER(_type, _typename)                                  \
   API_DECL_TYPED_PUT(_typename, _type)
 
@@ -1244,6 +1306,68 @@ SHMEM_CTX_GETMEM_NBI()
 #define shmem_size_get_nbi pshmem_size_get_nbi
 #pragma weak shmem_ptrdiff_get_nbi = pshmem_ptrdiff_get_nbi
 #define shmem_ptrdiff_get_nbi pshmem_ptrdiff_get_nbi
+#endif /* ENABLE_PSHMEM */
+
+/* Profiling entry points for default-context interleaved transfers. */
+#ifdef ENABLE_PSHMEM
+#pragma weak shmem_float_ibget = pshmem_float_ibget
+#define shmem_float_ibget pshmem_float_ibget
+#pragma weak shmem_double_ibget = pshmem_double_ibget
+#define shmem_double_ibget pshmem_double_ibget
+#pragma weak shmem_longdouble_ibget = pshmem_longdouble_ibget
+#define shmem_longdouble_ibget pshmem_longdouble_ibget
+#pragma weak shmem_char_ibget = pshmem_char_ibget
+#define shmem_char_ibget pshmem_char_ibget
+#pragma weak shmem_schar_ibget = pshmem_schar_ibget
+#define shmem_schar_ibget pshmem_schar_ibget
+#pragma weak shmem_short_ibget = pshmem_short_ibget
+#define shmem_short_ibget pshmem_short_ibget
+#pragma weak shmem_int_ibget = pshmem_int_ibget
+#define shmem_int_ibget pshmem_int_ibget
+#pragma weak shmem_long_ibget = pshmem_long_ibget
+#define shmem_long_ibget pshmem_long_ibget
+#pragma weak shmem_longlong_ibget = pshmem_longlong_ibget
+#define shmem_longlong_ibget pshmem_longlong_ibget
+#pragma weak shmem_uchar_ibget = pshmem_uchar_ibget
+#define shmem_uchar_ibget pshmem_uchar_ibget
+#pragma weak shmem_ushort_ibget = pshmem_ushort_ibget
+#define shmem_ushort_ibget pshmem_ushort_ibget
+#pragma weak shmem_uint_ibget = pshmem_uint_ibget
+#define shmem_uint_ibget pshmem_uint_ibget
+#pragma weak shmem_ulong_ibget = pshmem_ulong_ibget
+#define shmem_ulong_ibget pshmem_ulong_ibget
+#pragma weak shmem_ulonglong_ibget = pshmem_ulonglong_ibget
+#define shmem_ulonglong_ibget pshmem_ulonglong_ibget
+#pragma weak shmem_int8_ibget = pshmem_int8_ibget
+#define shmem_int8_ibget pshmem_int8_ibget
+#pragma weak shmem_int16_ibget = pshmem_int16_ibget
+#define shmem_int16_ibget pshmem_int16_ibget
+#pragma weak shmem_int32_ibget = pshmem_int32_ibget
+#define shmem_int32_ibget pshmem_int32_ibget
+#pragma weak shmem_int64_ibget = pshmem_int64_ibget
+#define shmem_int64_ibget pshmem_int64_ibget
+#pragma weak shmem_uint8_ibget = pshmem_uint8_ibget
+#define shmem_uint8_ibget pshmem_uint8_ibget
+#pragma weak shmem_uint16_ibget = pshmem_uint16_ibget
+#define shmem_uint16_ibget pshmem_uint16_ibget
+#pragma weak shmem_uint32_ibget = pshmem_uint32_ibget
+#define shmem_uint32_ibget pshmem_uint32_ibget
+#pragma weak shmem_uint64_ibget = pshmem_uint64_ibget
+#define shmem_uint64_ibget pshmem_uint64_ibget
+#pragma weak shmem_size_ibget = pshmem_size_ibget
+#define shmem_size_ibget pshmem_size_ibget
+#pragma weak shmem_ptrdiff_ibget = pshmem_ptrdiff_ibget
+#define shmem_ptrdiff_ibget pshmem_ptrdiff_ibget
+#pragma weak shmem_ibget8 = pshmem_ibget8
+#define shmem_ibget8 pshmem_ibget8
+#pragma weak shmem_ibget16 = pshmem_ibget16
+#define shmem_ibget16 pshmem_ibget16
+#pragma weak shmem_ibget32 = pshmem_ibget32
+#define shmem_ibget32 pshmem_ibget32
+#pragma weak shmem_ibget64 = pshmem_ibget64
+#define shmem_ibget64 pshmem_ibget64
+#pragma weak shmem_ibget128 = pshmem_ibget128
+#define shmem_ibget128 pshmem_ibget128
 #endif /* ENABLE_PSHMEM */
 
 #define API_GET_TYPE_HELPER(_type, _typename)                                  \

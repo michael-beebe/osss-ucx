@@ -59,17 +59,17 @@ COMMS_CTX_TEST_SIZE(64, ge, >=)
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
       int##_size##_t value) {                                                  \
     size_t i;                                                                  \
-    int n = 0;                                                                 \
+    int all = 1;                                                               \
                                                                                \
     for (i = 0; i < nelems; ++i) {                                             \
       if ((status != NULL) && (status[i] != 0)) {                              \
         continue;                                                              \
       }                                                                        \
                                                                                \
-      n += shmemc_ctx_test_##_opname##_size(ctx, &(vars[i]), value);           \
+      all &= shmemc_ctx_test_##_opname##_size(ctx, &(vars[i]), value);         \
     }                                                                          \
                                                                                \
-    return ((size_t)n == nelems) ? 1 : 0;                                      \
+    return all;                                                                \
   }
 
 COMMS_CTX_TEST_ALL_SIZE(16, eq)
@@ -163,7 +163,7 @@ COMMS_CTX_TEST_SOME_SIZE(64, ge)
         return n;                                                              \
       }                                                                        \
     }                                                                          \
-    return 0;                                                                  \
+    return SIZE_MAX;                                                           \
   }
 
 COMMS_CTX_TEST_ANY_SIZE(16, eq)
@@ -193,20 +193,20 @@ COMMS_CTX_TEST_ANY_SIZE(64, ge)
 #define COMMS_CTX_TEST_ALL_VECTOR_SIZE(_size, _opname)                         \
   int shmemc_ctx_test_all_vector_##_opname##_size(                             \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values) {                                                          \
-    int##_size##_t *vs = (int##_size##_t *)values;                             \
+      const void *values) {                                                    \
+    const int##_size##_t *vs = (const int##_size##_t *)values;                 \
     size_t i;                                                                  \
-    int n = 0;                                                                 \
+    int all = 1;                                                               \
                                                                                \
     for (i = 0; i < nelems; ++i) {                                             \
       if ((status != NULL) && (status[i] != 0)) {                              \
         continue;                                                              \
       }                                                                        \
                                                                                \
-      n += shmemc_ctx_test_##_opname##_size(ctx, &(vars[i]), vs[i]);           \
+      all &= shmemc_ctx_test_##_opname##_size(ctx, &(vars[i]), vs[i]);         \
     }                                                                          \
                                                                                \
-    return ((size_t)n == nelems) ? 1 : 0;                                      \
+    return all;                                                                \
   }
 
 COMMS_CTX_TEST_ALL_VECTOR_SIZE(16, eq)
@@ -236,8 +236,8 @@ COMMS_CTX_TEST_ALL_VECTOR_SIZE(64, ge)
 #define COMMS_CTX_TEST_SOME_VECTOR_SIZE(_size, _opname)                        \
   size_t shmemc_ctx_test_some_vector_##_opname##_size(                         \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, size_t *idxs,      \
-      const int *status, void *values) {                                       \
-    int##_size##_t *vs = (int##_size##_t *)values;                             \
+      const int *status, const void *values) {                                 \
+    const int##_size##_t *vs = (const int##_size##_t *)values;                 \
     size_t n;                                                                  \
     size_t i = 0;                                                              \
                                                                                \
@@ -280,8 +280,8 @@ COMMS_CTX_TEST_SOME_VECTOR_SIZE(64, ge)
 #define COMMS_CTX_TEST_ANY_VECTOR_SIZE(_size, _opname)                         \
   size_t shmemc_ctx_test_any_vector_##_opname##_size(                          \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values) {                                                          \
-    int##_size##_t *vs = (int##_size##_t *)values;                             \
+      const void *values) {                                                    \
+    const int##_size##_t *vs = (const int##_size##_t *)values;                 \
     size_t n;                                                                  \
                                                                                \
     for (n = 0; n < nelems; ++n) {                                             \
@@ -293,7 +293,7 @@ COMMS_CTX_TEST_SOME_VECTOR_SIZE(64, ge)
         return n;                                                              \
       }                                                                        \
     }                                                                          \
-    return 0;                                                                  \
+    return SIZE_MAX;                                                           \
   }
 
 COMMS_CTX_TEST_ANY_VECTOR_SIZE(16, eq)

@@ -58,44 +58,51 @@ void shmem_quiet(void) {
   SHMEMT_MUTEX_NOPROTECT(shmemc_ctx_quiet(SHMEM_CTX_DEFAULT));
 }
 
+#ifdef ENABLE_PSHMEM
+#pragma weak shmem_ctx_pe_quiet = pshmem_ctx_pe_quiet
+#define shmem_ctx_pe_quiet pshmem_ctx_pe_quiet
+#endif /* ENABLE_PSHMEM */
+
 /**
- * @brief Ensures completion of all remote memory updates issued to a context
- * for a subset of PEs
+ * @brief Completes communication to a set of PEs on a context.
+ * @param ctx Communication context.
+ * @param target_pes Array of target PEs, ignored when npes is zero.
+ * @param npes Number of target PEs.
  *
- * This operation ensures completion of all remote memory updates issued to a
- * specific context prior to this call.
- *
- * @param ctx   The context on which to ensure completion of updates
+ * Context-wide completion is a conservative implementation of PE quiet. It
+ * also submits pending session coalescing buffers before completing them.
  */
 void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes) {
-  logger(LOG_QUIET, "%s(ctx=%lu)", __func__, shmemc_context_id(ctx));
-
-  if (npes == 0){
+  SHMEMU_CHECK_INIT();
+  if (npes == 0) {
     return;
   }
-  for (size_t i = 0; i < npes; i++){
-    SHMEMU_CHECK_PE_ARG_RANGE(target_pes[i], 2);
-  }
-  SHMEMT_MUTEX_NOPROTECT(shmemc_ctx_pe_quiet(ctx, target_pes, npes));
+  SHMEMU_CHECK_NOT_NULL(target_pes, 2);
+  NO_WARN_UNUSED(target_pes);
+
+  logger(LOG_QUIET, "%s(ctx=%lu, npes=%zu)", __func__, shmemc_context_id(ctx),
+         npes);
+  SHMEMT_MUTEX_NOPROTECT(shmemc_ctx_quiet(ctx));
 }
 
+#ifdef ENABLE_PSHMEM
+#pragma weak shmem_pe_quiet = pshmem_pe_quiet
+#define shmem_pe_quiet pshmem_pe_quiet
+#endif /* ENABLE_PSHMEM */
+
 /**
- * @brief Ensures completion of all remote memory updates issued for a subset
- * of PEs
- *
- * This operation ensures completion of all remote memory updates issued to a
- * specific context prior to this call.
- *
- * @param ctx   The context on which to ensure completion of updates
+ * @brief Completes communication to a set of PEs on the default context.
+ * @param target_pes Array of target PEs, ignored when npes is zero.
+ * @param npes Number of target PEs.
  */
 void shmem_pe_quiet(const int *target_pes, size_t npes) {
-  logger(LOG_QUIET, "%s()", __func__);
-
-  if (npes == 0){
+  SHMEMU_CHECK_INIT();
+  if (npes == 0) {
     return;
   }
-  for (size_t i = 0; i < npes; i++){
-    SHMEMU_CHECK_PE_ARG_RANGE(target_pes[i], 1);
-  }
-  SHMEMT_MUTEX_NOPROTECT(shmemc_ctx_pe_quiet(SHMEM_CTX_DEFAULT, target_pes, npes));
+  SHMEMU_CHECK_NOT_NULL(target_pes, 1);
+  NO_WARN_UNUSED(target_pes);
+
+  logger(LOG_QUIET, "%s(npes=%zu)", __func__, npes);
+  SHMEMT_MUTEX_NOPROTECT(shmemc_ctx_quiet(SHMEM_CTX_DEFAULT));
 }

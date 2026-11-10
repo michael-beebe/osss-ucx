@@ -82,7 +82,7 @@
 #define SHMEM_TYPE_WAIT_UNTIL_ALL_VECTOR(_opname, _type, _size)                \
   void shmem_##_opname##_wait_until_all_vector(_type *ivars, size_t nelems,    \
                                                const int *status, int cmp,     \
-                                               _type *cmp_values) {            \
+                                               const _type *cmp_values) {      \
     SHMEMT_MUTEX_PROTECT(switch (cmp) {                                        \
       case SHMEM_CMP_EQ:                                                       \
         shmemc_ctx_wait_until_all_vector_eq##_size(                            \

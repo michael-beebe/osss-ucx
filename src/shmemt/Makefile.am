@@ -6,7 +6,8 @@ MY_INCLUDE             = -I../../include \
 MY_SOURCES             = threading.c
 
 if ENABLE_THREADS
-MY_INCLUDE            += -I$(top_srcdir)/src/shmemc
+MY_INCLUDE            += -I$(top_srcdir)/src/shmemc \
+                         -I$(top_srcdir)/src/shmemu
 MY_SOURCES            += shmem_mutex.c
 endif # threads
 

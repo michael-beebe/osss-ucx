@@ -131,6 +131,27 @@ extern shmem_ctx_t SHMEM_CTX_DEFAULT;
 enum shmem_team_params { SHMEM_TEAM_NUM_CONTEXTS = SHMEM_BIT_SET(0) };
 
 /**
+ * @brief Communication session options
+ */
+enum shmem_ctx_session_options {
+  SHMEM_CTX_SESSION_BATCH = SHMEM_BIT_SET(0)
+};
+
+/**
+ * @brief Communication session configuration parameter masks
+ */
+enum shmem_ctx_session_config_mask {
+  SHMEM_CTX_SESSION_TOTAL_OPS = SHMEM_BIT_SET(0)
+};
+
+/**
+ * @brief Communication session configuration structure
+ */
+typedef struct {
+  size_t total_ops;
+} shmem_ctx_session_config_t;
+
+/**
  * @brief Memory allocation hints
  */
 enum shmem_malloc_hints {

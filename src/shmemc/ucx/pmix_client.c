@@ -30,6 +30,9 @@ static pmix_proc_t my_pmix; /* about me */
 static pmix_proc_t wc_pmix; /* wildcard lookups */
 static pmix_proc_t ex_pmix; /* internal exchanges */
 
+/** Distinguish bootstrap data from every completed OpenSHMEM generation. */
+static unsigned long long generation = 0;
+
 static pmix_key_t k1; /* re-usable key spaces */
 #ifndef ENABLE_ALIGNED_ADDRESSES
 static pmix_key_t k2;
@@ -39,14 +42,14 @@ static pmix_key_t k2;
  * Make local info available to PMIx
  */
 
-static const char *wrkr_exch_fmt = "w:%d"; /* pe */
+static const char *wrkr_exch_fmt = "osss:g%llu:w:%d"; /* pe */
 
 void shmemc_pmi_publish_worker(void) {
   pmix_status_t ps;
   pmix_value_t v;
 
   /* everyone publishes their info */
-  snprintf(k1, PMIX_MAX_KEYLEN, wrkr_exch_fmt, proc.li.rank);
+  snprintf(k1, PMIX_MAX_KEYLEN, wrkr_exch_fmt, generation, proc.li.rank);
 
   v.type = PMIX_BYTE_OBJECT;
   v.data.bo.bytes = (char *)proc.comms.xchg_wrkr_info[proc.li.rank].addr;
@@ -56,7 +59,7 @@ void shmemc_pmi_publish_worker(void) {
   shmemu_assert(ps == PMIX_SUCCESS, MODULE ": PMIx can't publish worker blob");
 }
 
-static const char *rkey_exch_fmt = "r:%lu:%d"; /* region, pe */
+static const char *rkey_exch_fmt = "osss:g%llu:r:%lu:%d"; /* region, pe */
 
 inline static void publish_one_rkeys(size_t r) {
   pmix_value_t v;
@@ -70,7 +73,7 @@ inline static void publish_one_rkeys(size_t r) {
                 MODULE ": PMIx can't pack rkey for memory region %lu",
                 (unsigned long)r);
 
-  snprintf(k1, PMIX_MAX_KEYLEN, rkey_exch_fmt, r, proc.li.rank);
+  snprintf(k1, PMIX_MAX_KEYLEN, rkey_exch_fmt, generation, r, proc.li.rank);
 
   v.type = PMIX_BYTE_OBJECT;
   v.data.bo.bytes = (char *)packed_rkey;
@@ -85,8 +88,8 @@ inline static void publish_one_rkeys(size_t r) {
 }
 
 #ifndef ENABLE_ALIGNED_ADDRESSES
-static const char *region_base_fmt = "b:%lu:%d"; /* region, pe */
-static const char *region_size_fmt = "s:%lu:%d"; /* region, pe */
+static const char *region_base_fmt = "osss:g%llu:b:%lu:%d"; /* region, pe */
+static const char *region_size_fmt = "osss:g%llu:s:%lu:%d"; /* region, pe */
 #endif /* ! ENABLE_ALIGNED_ADDRESSES */
 
 #ifndef ENABLE_ALIGNED_ADDRESSES
@@ -94,8 +97,8 @@ inline static void publish_one_heap(size_t r) {
   pmix_status_t ps;
   pmix_value_t vb, vs;
 
-  snprintf(k1, PMIX_MAX_KEYLEN, region_base_fmt, r, proc.li.rank);
-  snprintf(k2, PMIX_MAX_KEYLEN, region_size_fmt, r, proc.li.rank);
+  snprintf(k1, PMIX_MAX_KEYLEN, region_base_fmt, generation, r, proc.li.rank);
+  snprintf(k2, PMIX_MAX_KEYLEN, region_size_fmt, generation, r, proc.li.rank);
 
   vb.type = PMIX_UINT64;
   vb.data.uint64 = proc.comms.regions[r].minfo[proc.li.rank].base;
@@ -143,7 +146,7 @@ void shmemc_pmi_exchange_workers(void) {
   for (pe = 0; pe < proc.li.nranks; ++pe) {
     pmix_byte_object_t *bop;
 
-    snprintf(k1, PMIX_MAX_KEYLEN, wrkr_exch_fmt, pe);
+    snprintf(k1, PMIX_MAX_KEYLEN, wrkr_exch_fmt, generation, pe);
     ex_pmix.rank = pe;
 
     ps = PMIx_Get(&ex_pmix, k1, NULL, 0, &vp);
@@ -173,8 +176,8 @@ inline static void exchange_one_heap(size_t r, int pe) {
 
   ex_pmix.rank = pe;
 
-  snprintf(k1, PMIX_MAX_KEYLEN, region_base_fmt, r, pe);
-  snprintf(k2, PMIX_MAX_KEYLEN, region_size_fmt, r, pe);
+  snprintf(k1, PMIX_MAX_KEYLEN, region_base_fmt, generation, r, pe);
+  snprintf(k2, PMIX_MAX_KEYLEN, region_size_fmt, generation, r, pe);
 
   ps = PMIx_Get(&ex_pmix, k1, NULL, 0, &vpb);
   shmemu_assert(ps == PMIX_SUCCESS,
@@ -208,7 +211,7 @@ inline static void exchange_one_rkeys(size_t r, int pe) {
 
   ex_pmix.rank = pe;
 
-  snprintf(k1, PMIX_MAX_KEYLEN, rkey_exch_fmt, r, pe);
+  snprintf(k1, PMIX_MAX_KEYLEN, rkey_exch_fmt, generation, r, pe);
 
   ps = PMIx_Get(&ex_pmix, k1, NULL, 0, &vp);
   shmemu_assert(ps == PMIX_SUCCESS,
@@ -531,6 +534,9 @@ void shmemc_pmi_client_init(void) {
 
   shmemu_assert(ps == PMIX_SUCCESS, MODULE ": PMIx can't initialize itself: %s",
                 PMIx_Error_string(ps));
+
+  /* Nested initializations do not reach the communications initializer. */
+  ++generation;
 
   /* make a new proc to query things not linked to a specific rank */
   PMIX_PROC_CONSTRUCT(&wc_pmix);

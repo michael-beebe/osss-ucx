@@ -157,7 +157,6 @@ inline static ucs_status_t check_wait_for_request(shmemc_context_h ch,
   if (req == NULL) { /* completed */
     return UCS_OK;
   } else if (UCS_PTR_IS_ERR(req)) {
-    ucp_request_cancel(ch->w, req);
     return UCS_PTR_STATUS(req);
   } else { /* wait for completion */
     ucs_status_t s;
@@ -173,6 +172,29 @@ inline static ucs_status_t check_wait_for_request(shmemc_context_h ch,
   }
 }
 
+/** Submit a put and release its local source before returning. */
+static void ctx_put_direct(shmemc_context_h ch, void *dest, const void *src,
+                           size_t nbytes, int pe) {
+  uint64_t remote;
+  ucp_rkey_h rkey;
+  ucs_status_t status;
+  get_remote_key_and_addr(ch, (uint64_t)dest, pe, &rkey, &remote);
+  const ucp_ep_h ep = lookup_ucp_ep(ch, pe);
+#ifdef HAVE_UCP_PUT_NBX
+  const ucp_request_param_t params = {
+      .op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK, .cb.send = noop_callbackx};
+  status = check_wait_for_request(
+      ch, ucp_put_nbx(ep, src, nbytes, remote, rkey, &params));
+#elif defined(HAVE_UCP_PUT_NB)
+  status = check_wait_for_request(
+      ch, ucp_put_nb(ep, src, nbytes, remote, rkey, noop_callback));
+#else
+  status = ucp_put(ep, src, nbytes, remote, rkey);
+#endif
+  if (status != UCS_OK)
+    shmemu_fatal(MODULE ": put failed (status: %s)", ucs_status_string(status));
+}
+
 /*
  * is a given symmetric variable global or managed?
  */
@@ -186,13 +208,14 @@ int shmemc_global_address(uint64_t addr) { return lookup_region(addr) == 0; }
  */
 
 /*
- * fence and quiet only do something on storable contexts, but
- * currently, progress is on the default context
+ * completion and ordering on communication contexts
  */
 
 void shmemc_ctx_fence(shmem_ctx_t ctx) {
   if (ctx != SHMEM_CTX_INVALID) {
     shmemc_context_h ch = (shmemc_context_h)ctx;
+
+    shmemc_ctx_session_coalesce_flush(ch);
 
     if (!ch->attr.nostore) {
       const ucs_status_t s = ucp_worker_fence(ch->w);
@@ -203,27 +226,43 @@ void shmemc_ctx_fence(shmem_ctx_t ctx) {
   }
 }
 
+void shmemc_ctx_session_coalesce_flush(shmemc_context_h ch) {
+#ifdef ENABLE_SESSION_COALESCING
+  if (ch == NULL || !ch->session.is_active || ch->session.coalesce.len == 0) {
+    return;
+  }
+  shmemc_coalesce_buf_t *cb = &ch->session.coalesce;
+  /* Local completion is required before data[] can be copied over again.
+   * This submits writes without implying remote completion at session stop. */
+  ctx_put_direct(ch, (void *)cb->remote_addr, cb->data, cb->len, cb->target_pe);
+  cb->len = 0;
+#else
+  NO_WARN_UNUSED(ch);
+#endif
+}
+
 void shmemc_ctx_quiet(shmem_ctx_t ctx) {
   if (ctx != SHMEM_CTX_INVALID) {
     shmemc_context_h ch = (shmemc_context_h)ctx;
 
-    if (!ch->attr.nostore) {
-      ucs_status_t s;
+    /* Flush any pending session coalesced operations first */
+    shmemc_ctx_session_coalesce_flush(ch);
+
+    /* NOSTORE relaxes application-store ordering, not completion of RMA. */
+    ucs_status_t s;
 
 #ifdef HAVE_UCP_WORKER_FLUSH_NBX
-      const ucp_request_param_t prm = {.op_attr_mask =
-                                           UCP_OP_ATTR_FIELD_CALLBACK,
-                                       .cb.send = noop_callbackx};
-      const ucs_status_ptr_t sp = ucp_worker_flush_nbx(ch->w, &prm);
+    const ucp_request_param_t prm = {.op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK,
+                                     .cb.send = noop_callbackx};
+    const ucs_status_ptr_t sp = ucp_worker_flush_nbx(ch->w, &prm);
 
-      s = check_wait_for_request(ch, sp);
+    s = check_wait_for_request(ch, sp);
 #else
-      s = ucp_worker_flush(ch->w);
+    s = ucp_worker_flush(ch->w);
 #endif /* HAVE_UCP_WORKER_FLUSH_NBX */
 
-      shmemu_assert(s == UCS_OK, MODULE ": %s() failed (status: %s)", __func__,
-                    ucs_status_string(s));
-    }
+    shmemu_assert(s == UCS_OK, MODULE ": %s() failed (status: %s)", __func__,
+                  ucs_status_string(s));
   }
 }
 
@@ -290,6 +329,7 @@ static ucs_status_t helper_posted_amo(shmemc_context_h ch,
   ucp_ep_h ep;
   uint64_t rv = *(uint64_t *)vp;
 
+  shmemc_ctx_session_coalesce_flush(ch);
   get_remote_key_and_addr(ch, (uint64_t)t, pe, &r_key, &r_t);
   ep = lookup_ucp_ep(ch, pe);
 
@@ -310,6 +350,7 @@ helper_fetching_amo_internal(shmemc_context_h ch, ucp_atomic_fetch_op_t op,
   uint64_t rv = *(uint64_t *)vp;
   ucs_status_ptr_t sp;
 
+  shmemc_ctx_session_coalesce_flush(ch);
   get_remote_key_and_addr(ch, (uint64_t)t, pe, &r_key, &r_t);
   ep = lookup_ucp_ep(ch, pe);
 
@@ -602,6 +643,7 @@ HELPER_BITWISE_ATOMIC(XOR, xor)
     ucp_rkey_h r_key;                                                          \
     ucp_ep_h ep;                                                               \
                                                                                \
+    shmemc_ctx_session_coalesce_flush(ch);                                    \
     memcpy(&vcomp, vp, vs); /* save comparator */                              \
     get_remote_key_and_addr(ch, (uint64_t)t, pe, &r_key, &r_t);                \
     ep = lookup_ucp_ep(ch, pe);                                                \
@@ -715,32 +757,44 @@ void shmemc_ctx_fetch_nbi(shmem_ctx_t ctx, void *tp, size_t ts, int pe,
 void shmemc_ctx_put(shmem_ctx_t ctx, void *dest, const void *src, size_t nbytes,
                     int pe) {
   shmemc_context_h ch = (shmemc_context_h)ctx;
-  uint64_t r_dest;  /* address on other PE */
-  ucp_rkey_h r_key; /* rkey for remote address */
-  ucp_ep_h ep;
-#if defined(HAVE_UCP_PUT_NBX) || defined(HAVE_UCP_PUT_NB)
-  ucs_status_ptr_t sp;
-#endif /* HAVE_UCP_PUT_NBX || HAVE_UCP_PUT_NB */
-  ucs_status_t s;
+  if (nbytes == 0)
+    return;
 
-  get_remote_key_and_addr(ch, (uint64_t)dest, pe, &r_key, &r_dest);
-  ep = lookup_ucp_ep(ch, pe);
+#ifdef ENABLE_SESSION_COALESCING
+  /* worker thread safety does not protect our buffer. */
+  const bool isolated = ch->attr.privat || ch->attr.serialized ||
+                        proc.td.osh_tl != SHMEM_THREAD_MULTIPLE;
+  /* shcoll uses standard rma on the default ctx internally for sync/consensus,
+   * so don't touch that */
+  if (ctx != SHMEM_CTX_DEFAULT && isolated && !ch->attr.nostore &&
+      ch->session.is_active &&
+      (ch->session.options & SHMEM_CTX_SESSION_BATCH) && nbytes <= 64) {
+    shmemc_coalesce_buf_t *cb = &ch->session.coalesce;
+    const uint64_t addr = (uint64_t)dest;
+    const long region = lookup_region(addr);
+    /* don't aggregate across registrations */
+    if (region >= 0 && addr <= UINT64_MAX - (nbytes - 1) &&
+        lookup_region(addr + nbytes - 1) == region) {
+      if (cb->len > 0 &&
+          (cb->target_pe != pe || addr != cb->remote_addr + cb->len ||
+           lookup_region(cb->remote_addr) != region ||
+           nbytes > SHMEMC_SESSION_COALESCE_BUF_SIZE - cb->len))
+        shmemc_ctx_session_coalesce_flush(ch);
+      if (cb->len == 0) {
+        cb->target_pe = pe;
+        cb->remote_addr = addr;
+      }
+      memcpy(cb->data + cb->len, src, nbytes);
+      cb->len += nbytes;
+      if (cb->len == SHMEMC_SESSION_COALESCE_BUF_SIZE)
+        shmemc_ctx_session_coalesce_flush(ch);
+      return;
+    }
+  }
+#endif
 
-#ifdef HAVE_UCP_PUT_NBX
-  const ucp_request_param_t prm = {.op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK,
-                                   .cb.send = noop_callbackx};
-
-  sp = ucp_put_nbx(ep, src, nbytes, r_dest, r_key, &prm);
-  s = check_wait_for_request(ch, sp);
-#elif defined(HAVE_UCP_PUT_NB)
-  sp = ucp_put_nb(ep, src, nbytes, r_dest, r_key, noop_callback);
-  s = check_wait_for_request(ch, sp);
-#else  /* ! HAVE_UCP_PUT_NB */
-  s = ucp_put(ep, src, nbytes, r_dest, r_key);
-#endif /* HAVE_UCP_PUT_NBX */
-
-  shmemu_assert(s == UCS_OK, MODULE ": put failed (status: %s)",
-                ucs_status_string(s));
+  shmemc_ctx_session_coalesce_flush(ch);
+  ctx_put_direct(ch, dest, src, nbytes, pe);
 }
 
 void shmemc_ctx_get(shmem_ctx_t ctx, void *dest, const void *src, size_t nbytes,
@@ -754,6 +808,7 @@ void shmemc_ctx_get(shmem_ctx_t ctx, void *dest, const void *src, size_t nbytes,
 #endif /* HAVE_UCP_GET_NBX || HAVE_UCP_GET_NB */
   ucs_status_t s;
 
+  shmemc_ctx_session_coalesce_flush(ch);
   get_remote_key_and_addr(ch, (uint64_t)src, pe, &r_key, &r_src);
   ep = lookup_ucp_ep(ch, pe);
 
@@ -791,6 +846,7 @@ void shmemc_ctx_put_nbi(shmem_ctx_t ctx, void *dest, const void *src,
   ucp_ep_h ep;
   ucs_status_t s;
 
+  shmemc_ctx_session_coalesce_flush(ch);
   get_remote_key_and_addr(ch, (uint64_t)dest, pe, &r_key, &r_dest);
   ep = lookup_ucp_ep(ch, pe);
 
@@ -807,6 +863,7 @@ void shmemc_ctx_get_nbi(shmem_ctx_t ctx, void *dest, const void *src,
   ucp_ep_h ep;
   ucs_status_t s;
 
+  shmemc_ctx_session_coalesce_flush(ch);
   get_remote_key_and_addr(ch, (uint64_t)src, pe, &r_key, &r_src);
   ep = lookup_ucp_ep(ch, pe);
 

@@ -67,8 +67,11 @@ static void shmemc_team_contexts_destroy(shmemc_team_h th) {
 
   for (c = 0; c < th->nctxts; ++c) {
     shmemc_ucx_teardown_context(th->ctxts[c]);
+    free(th->ctxts[c]);
   }
   free(th->ctxts);
+  th->ctxts = NULL;
+  th->nctxts = 0;
 }
 
 /**
@@ -112,10 +115,12 @@ static void initialize_psync_buffers(shmemc_team_h th) {
    * Use appropriate sync sizes for different collective operations:
    * pSyncs[0]: For team sync/barrier (SHMEM_BARRIER_SYNC_SIZE)
    * pSyncs[1]: For other collectives (SHMEM_REDUCE_SYNC_SIZE is the largest)
+   * pSyncs[2]: For broadcast data and its reuse rendezvous
    */
   const size_t sync_sizes[SHMEMC_NUM_PSYNCS] = {
       SHMEM_BARRIER_SYNC_SIZE, /* pSyncs[0] for team sync/barrier */
-      SHMEM_REDUCE_SYNC_SIZE   /* pSyncs[1] for other collectives */
+      SHMEM_REDUCE_SYNC_SIZE,  /* pSyncs[1] for other collectives */
+      SHMEM_BCAST_SYNC_SIZE    /* pSyncs[2] for broadcast */
   };
 
   for (nsync = 0; nsync < SHMEMC_NUM_PSYNCS; ++nsync) {
@@ -143,7 +148,7 @@ static void initialize_psync_buffers(shmemc_team_h th) {
  * to ensure it's ready for reuse.
  *
  * @param th Team handle
- * @param psync_idx Index of the pSync buffer to reset (0-4)
+ * @param psync_idx Index of the pSync buffer to reset
  * @return 0 on success, -1 on failure
  */
 int shmemc_team_reset_psync(shmemc_team_h th, unsigned psync_idx) {
@@ -168,7 +173,8 @@ int shmemc_team_reset_psync(shmemc_team_h th, unsigned psync_idx) {
   /* Get the appropriate size for this pSync buffer */
   const size_t sync_sizes[SHMEMC_NUM_PSYNCS] = {
       SHMEM_BARRIER_SYNC_SIZE, /* pSyncs[0] for team sync/barrier */
-      SHMEM_REDUCE_SYNC_SIZE   /* pSyncs[1] for other collectives */
+      SHMEM_REDUCE_SYNC_SIZE,  /* pSyncs[1] for other collectives */
+      SHMEM_BCAST_SYNC_SIZE    /* pSyncs[2] for broadcast */
   };
 
   /* Reset all elements to SHMEM_SYNC_VALUE */
@@ -217,7 +223,10 @@ long *shmemc_team_get_psync(shmemc_team_h th, int psync_type) {
         psync_type);
   }
   int psync_idx =
-      psync_type == 0 ? SHMEMC_PSYNC_BARRIER : SHMEMC_PSYNC_COLLECTIVE;
+      psync_type == SHMEMC_PSYNC_BARRIER
+          ? SHMEMC_PSYNC_BARRIER
+          : (psync_type == SHMEMC_PSYNC_BROADCAST ? SHMEMC_PSYNC_BROADCAST
+                                                  : SHMEMC_PSYNC_COLLECTIVE);
 
   if (th->pSyncs[psync_idx] == NULL) {
     shmemu_warn("shmemc_team_get_psync: pSync buffer for type %d is NULL",

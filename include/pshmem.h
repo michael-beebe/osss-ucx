@@ -9,7 +9,7 @@
 #define _PSHMEM_H 1
 
 #include "shmem.h"
-#include "api_types.h"
+#include <shmem/api_types.h>
 
 #include <stdint.h> /* uint*_t */
 
@@ -34,6 +34,12 @@ void pstart_pes(int npes);
 void pshmem_init(void);
 
 /**
+ * @brief Reports initialization status through the profiling interface.
+ * @param[out] initialized Nonzero while initialized, zero otherwise.
+ */
+void pshmem_query_initialized(int *initialized);
+
+/**
  * @brief Clean up the OpenSHMEM environment
  */
 void pshmem_finalize(void);
@@ -56,14 +62,13 @@ void pshmem_info_get_name(char *name);
  * @param req Requested thread support level
  * @param prov Provided thread support level
  */
-void pshmem_init_thread(int req, int *prov);
+int pshmem_init_thread(int req, int *prov);
 
 /**
  * @brief Query the thread support level
- * @param prov Current thread support level
- * @return 0 on success, non-zero otherwise
+ * @param[out] prov Current thread support level
  */
-int pshmem_query_thread(int *prov) _WUR;
+void pshmem_query_thread(int *prov);
 
 /**
  * @brief Terminate all PEs with an exit code
@@ -259,6 +264,53 @@ PSHMEM_DECL_PUTGET_SIZE(get, 64)
 PSHMEM_DECL_PUTGET_SIZE(get, 128)
 
 #undef PSHMEM_DECL_PUTGET_SIZE
+
+/**
+ * @brief Declares typed interleaved block transfers and their context forms.
+ * @param _type Element type.
+ * @param _name OpenSHMEM type name.
+ */
+#define PSHMEM_DECL_IB_TRANSFER(_type, _name)                                  \
+  void pshmem_##_name##_ibput(_type *dest, const _type *source, ptrdiff_t dst, \
+                              ptrdiff_t sst, size_t bsize, size_t nblocks,     \
+                              int pe);                                         \
+  void pshmem_##_name##_ibget(_type *dest, const _type *source, ptrdiff_t dst, \
+                              ptrdiff_t sst, size_t bsize, size_t nblocks,     \
+                              int pe);                                         \
+  void pshmem_ctx_##_name##_ibput(                                             \
+      shmem_ctx_t ctx, _type *dest, const _type *source, ptrdiff_t dst,        \
+      ptrdiff_t sst, size_t bsize, size_t nblocks, int pe);                    \
+  void pshmem_ctx_##_name##_ibget(                                             \
+      shmem_ctx_t ctx, _type *dest, const _type *source, ptrdiff_t dst,        \
+      ptrdiff_t sst, size_t bsize, size_t nblocks, int pe);
+
+SHMEM_STANDARD_RMA_TYPE_TABLE(PSHMEM_DECL_IB_TRANSFER)
+#undef PSHMEM_DECL_IB_TRANSFER
+
+/**
+ * @brief Declares sized interleaved block transfers and their context forms.
+ * @param _size Element size in bits.
+ */
+#define PSHMEM_DECL_IB_TRANSFER_SIZE(_size)                                    \
+  void pshmem_ibput##_size(void *dest, const void *source, ptrdiff_t dst,      \
+                           ptrdiff_t sst, size_t bsize, size_t nblocks,        \
+                           int pe);                                            \
+  void pshmem_ibget##_size(void *dest, const void *source, ptrdiff_t dst,      \
+                           ptrdiff_t sst, size_t bsize, size_t nblocks,        \
+                           int pe);                                            \
+  void pshmem_ctx_ibput##_size(                                                \
+      shmem_ctx_t ctx, void *dest, const void *source, ptrdiff_t dst,          \
+      ptrdiff_t sst, size_t bsize, size_t nblocks, int pe);                    \
+  void pshmem_ctx_ibget##_size(                                                \
+      shmem_ctx_t ctx, void *dest, const void *source, ptrdiff_t dst,          \
+      ptrdiff_t sst, size_t bsize, size_t nblocks, int pe);
+
+PSHMEM_DECL_IB_TRANSFER_SIZE(8)
+PSHMEM_DECL_IB_TRANSFER_SIZE(16)
+PSHMEM_DECL_IB_TRANSFER_SIZE(32)
+PSHMEM_DECL_IB_TRANSFER_SIZE(64)
+PSHMEM_DECL_IB_TRANSFER_SIZE(128)
+#undef PSHMEM_DECL_IB_TRANSFER_SIZE
 
 /**
  * @brief Put contiguous data to remote PE
@@ -904,6 +956,13 @@ void pshmem_sync_all(void);
 void pshmem_fence(void);
 void pshmem_quiet(void);
 
+/**
+ * @brief Completes communication to the listed PEs on the default context.
+ * @param target_pes Array of world PE numbers, ignored when npes is zero.
+ * @param npes Number of target PEs.
+ */
+void pshmem_pe_quiet(const int *target_pes, size_t npes);
+
 /*
  * accessibility
  */
@@ -945,6 +1004,34 @@ int pshmem_uint32_test(uint32_t *ivar, int cmp, uint32_t cmp_value);
 int pshmem_uint64_test(uint64_t *ivar, int cmp, uint64_t cmp_value);
 int pshmem_size_test(size_t *ivar, int cmp, size_t cmp_value);
 int pshmem_ptrdiff_test(ptrdiff_t *ivar, int cmp, ptrdiff_t cmp_value);
+
+/**
+ * @brief Declares profiling entry points for vector comparisons.
+ * @param _type Comparison element type.
+ * @param _name OpenSHMEM type name.
+ */
+#define PSHMEM_DECL_VECTOR_SYNC(_type, _name)                                  \
+  int pshmem_##_name##_test_all_vector(_type *ivars, size_t nelems,            \
+                                       const int *status, int cmp,             \
+                                       const _type *cmp_values);               \
+  size_t pshmem_##_name##_test_any_vector(_type *ivars, size_t nelems,         \
+                                          const int *status, int cmp,          \
+                                          const _type *cmp_values);            \
+  size_t pshmem_##_name##_test_some_vector(_type *ivars, size_t nelems,        \
+                                           size_t *indices, const int *status, \
+                                           int cmp, const _type *cmp_values);  \
+  void pshmem_##_name##_wait_until_all_vector(_type *ivars, size_t nelems,     \
+                                              const int *status, int cmp,      \
+                                              const _type *cmp_values);        \
+  size_t pshmem_##_name##_wait_until_any_vector(_type *ivars, size_t nelems,   \
+                                                const int *status, int cmp,    \
+                                                const _type *cmp_values);      \
+  size_t pshmem_##_name##_wait_until_some_vector(                              \
+      _type *ivars, size_t nelems, size_t *indices, const int *status,         \
+      int cmp, const _type *cmp_values);
+
+SHMEM_STANDARD_AMO_TYPE_TABLE(PSHMEM_DECL_VECTOR_SYNC)
+#undef PSHMEM_DECL_VECTOR_SYNC
 
 void pshmem_short_wait_until(short *ivar, int cmp, short cmp_value);
 void pshmem_int_wait_until(int *ivar, int cmp, int cmp_value);
@@ -1741,6 +1828,23 @@ int pshmem_ctx_create(long options, shmem_ctx_t *ctxp) _WUR;
  */
 void pshmem_ctx_destroy(shmem_ctx_t ctx);
 
+/**
+ * @brief Start a communication session on a context
+ * @param ctx Context handle
+ * @param options Session hint options
+ * @param config Pointer to session configuration parameters
+ * @param config_mask Bitwise mask of configuration parameters
+ */
+void pshmem_ctx_session_start(shmem_ctx_t ctx, long options,
+                              const shmem_ctx_session_config_t *config,
+                              long config_mask);
+
+/**
+ * @brief Stop a communication session on a context
+ * @param ctx Context handle
+ */
+void pshmem_ctx_session_stop(shmem_ctx_t ctx);
+
 /*
  * Signal operations
  */
@@ -1751,6 +1855,28 @@ void pshmem_ctx_destroy(shmem_ctx_t ctx);
  * @return The signal value
  */
 uint64_t pshmem_signal_fetch(const uint64_t *sig_addr) _WUR;
+
+/**
+ * @brief Atomically set a signal value on default context
+ */
+void pshmem_signal_set(uint64_t *sig_addr, uint64_t signal, int pe);
+
+/**
+ * @brief Atomically set a signal value on a context
+ */
+void pshmem_ctx_signal_set(shmem_ctx_t ctx, uint64_t *sig_addr, uint64_t signal,
+                           int pe);
+
+/**
+ * @brief Atomically add to a signal value on default context
+ */
+void pshmem_signal_add(uint64_t *sig_addr, uint64_t signal, int pe);
+
+/**
+ * @brief Atomically add to a signal value on a context
+ */
+void pshmem_ctx_signal_add(shmem_ctx_t ctx, uint64_t *sig_addr, uint64_t signal,
+                           int pe);
 
 /**
  * @brief Wait for signal object to change value
@@ -2349,20 +2475,20 @@ void pshmem_double_set(double *target, double value, int pe);
 #endif /* __STDC_VERSION__ defined test */
 
 /*
- * --end--
- */
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
-
-#endif /* _PSHMEM_H */
-/*
  * Context-aware operations
  */
 
 void pshmem_ctx_fence(shmem_ctx_t ctx);
 void pshmem_ctx_quiet(shmem_ctx_t ctx);
+
+/**
+ * @brief Completes communication to the listed PEs on a context.
+ * @param ctx Communication context.
+ * @param target_pes Array of team-relative PE numbers, ignored when npes is
+ * zero.
+ * @param npes Number of target PEs.
+ */
+void pshmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
 void pshmem_ctx_putmem(shmem_ctx_t ctx, void *dest, const void *src,
                        size_t nelems, int pe);
 void pshmem_ctx_getmem(shmem_ctx_t ctx, void *dest, const void *src,
@@ -2595,5 +2721,43 @@ void pshmem_ctx_longlong_set(shmem_ctx_t ctx, long long *target,
 void pshmem_ctx_float_set(shmem_ctx_t ctx, float *target, float value, int pe);
 void pshmem_ctx_double_set(shmem_ctx_t ctx, double *target, double value,
                            int pe);
+
+/* Scan operations */
+#define PSHMEM_DECL_SCAN_OP(_name, _type)                                      \
+  int pshmem_##_name##_sum_inscan(shmem_team_t team, _type *dest,             \
+                                  const _type *source, size_t nelems);         \
+  int pshmem_##_name##_sum_exscan(shmem_team_t team, _type *dest,             \
+                                  const _type *source, size_t nelems);
+
+PSHMEM_DECL_SCAN_OP(char, char)
+PSHMEM_DECL_SCAN_OP(schar, signed char)
+PSHMEM_DECL_SCAN_OP(short, short)
+PSHMEM_DECL_SCAN_OP(int, int)
+PSHMEM_DECL_SCAN_OP(long, long)
+PSHMEM_DECL_SCAN_OP(longlong, long long)
+PSHMEM_DECL_SCAN_OP(ptrdiff, ptrdiff_t)
+PSHMEM_DECL_SCAN_OP(uchar, unsigned char)
+PSHMEM_DECL_SCAN_OP(ushort, unsigned short)
+PSHMEM_DECL_SCAN_OP(uint, unsigned int)
+PSHMEM_DECL_SCAN_OP(ulong, unsigned long)
+PSHMEM_DECL_SCAN_OP(ulonglong, unsigned long long)
+PSHMEM_DECL_SCAN_OP(int8, int8_t)
+PSHMEM_DECL_SCAN_OP(int16, int16_t)
+PSHMEM_DECL_SCAN_OP(int32, int32_t)
+PSHMEM_DECL_SCAN_OP(int64, int64_t)
+PSHMEM_DECL_SCAN_OP(uint8, uint8_t)
+PSHMEM_DECL_SCAN_OP(uint16, uint16_t)
+PSHMEM_DECL_SCAN_OP(uint32, uint32_t)
+PSHMEM_DECL_SCAN_OP(uint64, uint64_t)
+PSHMEM_DECL_SCAN_OP(size, size_t)
+PSHMEM_DECL_SCAN_OP(float, float)
+PSHMEM_DECL_SCAN_OP(double, double)
+PSHMEM_DECL_SCAN_OP(longdouble, long double)
+PSHMEM_DECL_SCAN_OP(complexd, double _Complex)
+PSHMEM_DECL_SCAN_OP(complexf, float _Complex)
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 #endif /* _PSHMEM_H */

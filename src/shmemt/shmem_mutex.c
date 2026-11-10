@@ -20,9 +20,11 @@
 #ifdef ENABLE_THREADS
 
 #include "state.h"
+#include "shmemu.h"
 #include "shmem_mutex.h"
 #include "shmem/defs.h"
 #include "threading.h"
+#include <string.h>
 
 /** Global mutex for protecting communications */
 static threadwrap_mutex_t comms_mutex;
@@ -32,7 +34,19 @@ static threadwrap_mutex_t comms_mutex;
  *
  * Initializes the global communications mutex.
  */
-void shmemt_init(void) { threadwrap_mutex_init(&comms_mutex); }
+void shmemt_init(void) {
+  int status = threadwrap_mutex_init(&comms_mutex);
+  shmemu_assert(status == 0, "could not initialize communications mutex: %s",
+                strerror(status));
+}
+
+/** @brief Release the mutex before another runtime generation is initialized.
+ */
+void shmemt_finalize(void) {
+  int status = threadwrap_mutex_destroy(&comms_mutex);
+  shmemu_assert(status == 0, "could not destroy communications mutex: %s",
+                strerror(status));
+}
 
 /**
  * @brief Initialize mutex for thread synchronization

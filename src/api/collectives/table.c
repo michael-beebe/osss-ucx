@@ -50,7 +50,7 @@
  * @param _algo The algorithm implementation name
  */
 #define SIZED_REG(_op, _algo)                                                  \
-  {#_algo, shcoll_##_op##32##_##_algo, shcoll_##_op##64##_##_algo}
+  {#_algo, (coll_fn_t)shcoll_##_op##32##_##_algo, (coll_fn_t)shcoll_##_op##64##_##_algo}
 
 /**
  * @brief Macro to terminate a sized operation table
@@ -62,7 +62,7 @@
  * @param _op The collective operation name
  * @param _algo The algorithm implementation name
  */
-#define UNSIZED_REG(_op, _algo) {#_algo, shcoll_##_op##_##_algo}
+#define UNSIZED_REG(_op, _algo) {#_algo, (coll_fn_t)shcoll_##_op##_##_algo}
 
 /**
  * @brief Macro to terminate an unsized operation table
@@ -78,7 +78,7 @@
  * @param _typename The data type name
  */
 #define TYPED_REG(_op, _algo, _typename)                                       \
-  {#_algo, #_typename, shcoll_##_typename##_##_op##_##_algo}
+  {#_algo, #_typename, (typed_coll_fn_t)shcoll_##_typename##_##_op##_##_algo}
 
 /**
  * @brief Macro to terminate a typed operation table
@@ -90,7 +90,7 @@
  * @param _op The collective operation name
  * @param _algo The algorithm implementation name
  */
-#define UNTYPED_REG(_op, _algo) {#_algo, shcoll_##_op##_##_algo}
+#define UNTYPED_REG(_op, _algo) {#_algo, (untyped_coll_fn_t)shcoll_##_op##_##_algo}
 
 /**
  * @brief Macro to terminate an untyped operation table
@@ -105,7 +105,7 @@
  * @param _typename The data type name
  */
 #define TYPED_TO_ALL_REG(_op, _algo, _typename)                                \
-  {#_algo, #_typename, shcoll_##_typename##_##_op##_to_all_##_algo}
+  {#_algo, #_typename, (typed_to_all_fn_t)shcoll_##_typename##_##_op##_to_all_##_algo}
 /**
  * @brief Macro to register a typed collective reduction operation
  * @param _op The collective operation name
@@ -113,7 +113,7 @@
  * @param _typename The data type name
  */
 #define TYPED_REDUCE_REG(_op, _algo, _typename)                                \
-  {#_algo, #_typename, shcoll_##_typename##_##_op##_reduce_##_algo}
+  {#_algo, #_typename, (typed_coll_fn_t)shcoll_##_typename##_##_op##_reduce_##_algo}
 
 /*
  * @brief Macro to register a typed sum_inscan collective 
@@ -121,7 +121,7 @@
  * @param _typename The data type name
  */
 #define TYPED_SUM_INSCAN_REG(_algo, _typename)                                \
-  {#_algo, #_typename, shcoll_##_typename##_sum_inscan_##_algo}
+  {#_algo, #_typename, (typed_coll_fn_t)shcoll_##_typename##_sum_inscan_##_algo}
 
 /*
  * @brief Macro to register a typed sum_exscan collective 
@@ -129,7 +129,7 @@
  * @param _typename The data type name
  */
 #define TYPED_SUM_EXSCAN_REG(_algo, _typename)                                \
-  {#_algo, #_typename, shcoll_##_typename##_sum_exscan_##_algo}
+  {#_algo, #_typename, (typed_coll_fn_t)shcoll_##_typename##_sum_exscan_##_algo}
 
 /******************************************************** */
 /**

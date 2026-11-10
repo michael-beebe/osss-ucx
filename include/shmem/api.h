@@ -77,6 +77,15 @@ void start_pes(int npes) _DEPRECATED_BY(shmem_init, 1.2);
  */
 void shmem_init(void);
 
+/**
+ * @brief Reports whether the OpenSHMEM library is initialized.
+ * @param[out] initialized Nonzero while initialized, zero otherwise.
+ *
+ * This routine may be called before initialization, after finalization, and
+ * from any thread regardless of the requested thread support level.
+ */
+void shmem_query_initialized(int *initialized);
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * @brief initializes the OpenSHMEM environment on the calling PE
@@ -1042,7 +1051,7 @@ uint64_t shmem_signal_fetch(const uint64_t *sig_addr);
  *
  * @subsection c C/C++
  @code
- void shmem_ctx_signal_set(shmem_ctx_t ctx, const uint64_t *sig_addr,
+ void shmem_ctx_signal_set(shmem_ctx_t ctx, uint64_t *sig_addr,
       uint64_t signal, int pe) {
  @endcode
  *
@@ -1058,9 +1067,9 @@ uint64_t shmem_signal_fetch(const uint64_t *sig_addr);
  * None.
  *
  */
-void shmem_ctx_signal_set(shmem_ctx_t ctx, const uint64_t *sig_addr,
-      uint64_t signal, int pe);
-  
+void shmem_ctx_signal_set(shmem_ctx_t ctx, uint64_t *sig_addr, uint64_t signal,
+                          int pe);
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * @brief sets value of the signal object.
@@ -1069,7 +1078,7 @@ void shmem_ctx_signal_set(shmem_ctx_t ctx, const uint64_t *sig_addr,
  *
  * @subsection c C/C++
  @code
- void shmem_signal_set(const uint64_t *sig_addr, uint64_t signal, int pe);
+ void shmem_signal_set(uint64_t *sig_addr, uint64_t signal, int pe);
  @endcode
  *
  * @param[in] sig_addr The address of the remotely accessible signal object
@@ -1083,7 +1092,7 @@ void shmem_ctx_signal_set(shmem_ctx_t ctx, const uint64_t *sig_addr,
  * None.
  *
  */
-void shmem_signal_set(const uint64_t *sig_addr, uint64_t signal, int pe);
+void shmem_signal_set(uint64_t *sig_addr, uint64_t signal, int pe);
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -1093,7 +1102,7 @@ void shmem_signal_set(const uint64_t *sig_addr, uint64_t signal, int pe);
  *
  * @subsection c C/C++
  @code
- void shmem_ctx_signal_add(shmem_ctx_t ctx, const uint64_t *sig_addr,
+ void shmem_ctx_signal_add(shmem_ctx_t ctx, uint64_t *sig_addr,
       uint64_t signal, int pe) {
  @endcode
  *
@@ -1109,9 +1118,9 @@ void shmem_signal_set(const uint64_t *sig_addr, uint64_t signal, int pe);
  * None.
  *
  */
-void shmem_ctx_signal_add(shmem_ctx_t ctx, const uint64_t *sig_addr,
-      uint64_t signal, int pe);
-  
+void shmem_ctx_signal_add(shmem_ctx_t ctx, uint64_t *sig_addr, uint64_t signal,
+                          int pe);
+
 ////////////////////////////////////////////////////////////////////////////////
 /**
  * @brief adds value of the signal object.
@@ -1120,7 +1129,7 @@ void shmem_ctx_signal_add(shmem_ctx_t ctx, const uint64_t *sig_addr,
  *
  * @subsection c C/C++
  @code
- void shmem_signal_add(const uint64_t *sig_addr, uint64_t signal, int pe);
+ void shmem_signal_add(uint64_t *sig_addr, uint64_t signal, int pe);
  @endcode
  *
  * @param[in] sig_addr The address of the remotely accessible signal object
@@ -1134,7 +1143,7 @@ void shmem_ctx_signal_add(shmem_ctx_t ctx, const uint64_t *sig_addr,
  * None.
  *
  */
-void shmem_signal_add(const uint64_t *sig_addr, uint64_t signal, int pe);
+void shmem_signal_add(uint64_t *sig_addr, uint64_t signal, int pe);
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -1318,28 +1327,26 @@ void shmem_fence(void);
 void shmem_ctx_quiet(shmem_ctx_t ctx);
 void shmem_quiet(void);
 
+/**
+ * @brief Completes communication to the specified PEs on a context.
+ * @param[in] ctx Communication context.
+ * @param[in] target_pes Array of target PE numbers relative to the context's
+ * team. Ignored when npes is zero.
+ * @param[in] npes Number of entries in target_pes.
+ *
+ * Completion and visibility guarantees match shmem_ctx_quiet for the listed
+ * PEs. The implementation may also complete communication to other PEs.
+ * If npes is zero, this routine returns immediately.
+ */
+void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
 
 /**
- * @brief causes outbound communication to complete before
- * subsequent puts are sent for a subset of PEs.
- * @page shmem_ctx_quiet
- * @section Synopsis
- *
- * @subsection c C/C++
- @code
- void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
- void shmem_pe_quiet(const int *target_pes, size_t npes);
- @endcode
- *
- * @section Effect
- * Remote completion
- *
- * @section Return
- * None.
- *
+ * @brief Completes communication to the specified PEs on the default context.
+ * @param[in] target_pes Array of world PE numbers. Ignored when npes is zero.
+ * @param[in] npes Number of entries in target_pes.
+ * @see shmem_ctx_pe_quiet
  */
- void shmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes);
- void shmem_pe_quiet(const int *target_pes, size_t npes);
+void shmem_pe_quiet(const int *target_pes, size_t npes);
 
 ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -1775,7 +1782,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_SOME)
  * @subsection c C/C++
  * @code
  * int shmem_long_test_all_vector(long *ivars, size_t nelems, const int *status,
- * int cmp, long *cmp_values);
+ * int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to be tested
@@ -1795,7 +1802,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_SOME)
 #define API_DECL_TEST_ALL_VECTOR(_typename, _type)                             \
   int shmem_##_typename##_test_all_vector(_type *ivars, size_t nelems,         \
                                           const int *status, int cmp,          \
-                                          _type *cmp_values);
+                                          const _type *cmp_values);
 
 #define DECL_TEST_ALL_VECTOR(_type, _typename)                                 \
   API_DECL_TEST_ALL_VECTOR(_typename, _type)
@@ -1814,7 +1821,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_ALL_VECTOR)
  * @subsection c C/C++
  * @code
  * size_t shmem_long_test_any_vector(long *ivars, size_t nelems, const int
- * *status, int cmp, long *cmp_values);
+ * *status, int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to be tested
@@ -1835,7 +1842,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_ALL_VECTOR)
 #define API_DECL_TEST_ANY_VECTOR(_typename, _type)                             \
   size_t shmem_##_typename##_test_any_vector(_type *ivars, size_t nelems,      \
                                              const int *status, int cmp,       \
-                                             _type *cmp_values);
+                                             const _type *cmp_values);
 
 #define DECL_TEST_ANY_VECTOR(_type, _typename)                                 \
   API_DECL_TEST_ANY_VECTOR(_typename, _type)
@@ -1854,7 +1861,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_ANY_VECTOR)
  * @subsection c C/C++
  * @code
  * size_t shmem_long_test_some_vector(long *ivars, size_t nelems, size_t
- * *indices, const int *status, int cmp, long *cmp_values);
+ * *indices, const int *status, int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to be tested
@@ -1877,7 +1884,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_TEST_ANY_VECTOR)
 #define API_DECL_TEST_SOME_VECTOR(_typename, _type)                            \
   size_t shmem_##_typename##_test_some_vector(                                 \
       _type *ivars, size_t nelems, size_t *indices, const int *status,         \
-      int cmp, _type *cmp_values);
+      int cmp, const _type *cmp_values);
 
 #define DECL_TEST_SOME_VECTOR(_type, _typename)                                \
   API_DECL_TEST_SOME_VECTOR(_typename, _type)
@@ -2010,7 +2017,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_SOME)
  * @subsection c C/C++
  * @code
  * void shmem_long_wait_until_all_vector(long *ivars, size_t nelems, const int
- * *status, int cmp, long *cmp_values);
+ * *status, int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to wait on
@@ -2030,7 +2037,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_SOME)
 #define API_DECL_WAIT_UNTIL_ALL_VECTOR(_typename, _type)                       \
   void shmem_##_typename##_wait_until_all_vector(_type *ivars, size_t nelems,  \
                                                  const int *status, int cmp,   \
-                                                 _type *cmp_values);
+                                                 const _type *cmp_values);
 
 #define DECL_WAIT_UNTIL_ALL_VECTOR(_type, _typename)                           \
   API_DECL_WAIT_UNTIL_ALL_VECTOR(_typename, _type)
@@ -2049,7 +2056,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_ALL_VECTOR)
  * @subsection c C/C++
  * @code
  * size_t shmem_long_wait_until_any_vector(long *ivars, size_t nelems, const int
- * *status, int cmp, long *cmp_values);
+ * *status, int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to wait on
@@ -2069,7 +2076,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_ALL_VECTOR)
 #define API_DECL_WAIT_UNTIL_ANY_VECTOR(_typename, _type)                       \
   size_t shmem_##_typename##_wait_until_any_vector(                            \
       _type *ivars, size_t nelems, const int *status, int cmp,                 \
-      _type *cmp_values);
+      const _type *cmp_values);
 
 #define DECL_WAIT_UNTIL_ANY_VECTOR(_type, _typename)                           \
   API_DECL_WAIT_UNTIL_ANY_VECTOR(_typename, _type)
@@ -2088,7 +2095,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_ANY_VECTOR)
  * @subsection c C/C++
  * @code
  * size_t shmem_long_wait_until_some_vector(long *ivars, size_t nelems, size_t
- * *indices, const int *status, int cmp, long *cmp_values);
+ * *indices, const int *status, int cmp, const long *cmp_values);
  * @endcode
  *
  * @param ivars      Array of symmetric variables to wait on
@@ -2112,7 +2119,7 @@ SHMEM_STANDARD_AMO_TYPE_TABLE(DECL_WAIT_UNTIL_ANY_VECTOR)
 #define API_DECL_WAIT_UNTIL_SOME_VECTOR(_typename, _type)                      \
   size_t shmem_##_typename##_wait_until_some_vector(                           \
       _type *ivars, size_t nelems, size_t *indices, const int *status,         \
-      int cmp, _type *cmp_values);
+      int cmp, const _type *cmp_values);
 
 #define DECL_WAIT_UNTIL_SOME_VECTOR(_type, _typename)                          \
   API_DECL_WAIT_UNTIL_SOME_VECTOR(_typename, _type)
@@ -3867,6 +3874,60 @@ int shmem_ctx_create(long options, shmem_ctx_t *ctxp);
  *
  */
 void shmem_ctx_destroy(shmem_ctx_t ctx);
+
+//////////////////////////////////////////////////////////////////////////////////
+/**
+ * @brief starts a communication session on a context
+ * @page shmem_ctx_session_start
+ * @section Synopsis
+ *
+ * @subsection c C/C++
+ @code
+ void shmem_ctx_session_start(shmem_ctx_t ctx, long options,
+                              const shmem_ctx_session_config_t *config,
+                              long config_mask);
+ @endcode
+ *
+ * @param[in] ctx context handle
+ * @param[in] options session hint options
+ * @param[in] config pointer to configuration parameters
+ * @param[in] config_mask mask of configuration parameters to use
+ *
+ * @section Effect
+ *
+ * starts a communication session on communication context ctx with hints
+ * requested via options.
+ *
+ * @section Return
+ * None.
+ *
+ */
+void shmem_ctx_session_start(shmem_ctx_t ctx, long options,
+                             const shmem_ctx_session_config_t *config,
+                             long config_mask);
+
+//////////////////////////////////////////////////////////////////////////////////
+/**
+ * @brief stops a communication session on a context
+ * @page shmem_ctx_session_stop
+ * @section Synopsis
+ *
+ * @subsection c C/C++
+ @code
+ void shmem_ctx_session_stop(shmem_ctx_t ctx);
+ @endcode
+ *
+ * @param[in] ctx context handle
+ *
+ * @section Effect
+ *
+ * ends a communication session on context ctx.
+ *
+ * @section Return
+ * None.
+ *
+ */
+void shmem_ctx_session_stop(shmem_ctx_t ctx);
 
 //////////////////////////////////////////////////////////////////////////////////
 /*

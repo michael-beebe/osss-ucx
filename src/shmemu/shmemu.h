@@ -249,7 +249,8 @@ int shmemu_thread_level(const char *tn);
 
 #define SHMEMU_CHECK_INIT()                                                    \
   do {                                                                         \
-    if (shmemu_unlikely(proc.refcount < 1)) {                                  \
+    if (shmemu_unlikely(__atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE) <    \
+                        1)) {                                                  \
       shmemu_fatal("In %s(), attempt to use OpenSHMEM library"                 \
                    " before initialization",                                   \
                    __func__);                                                  \
@@ -345,11 +346,11 @@ int shmemu_thread_level(const char *tn);
 /* check that _a is greater than or equal to _b */
 #define SHMEMU_CHECK_GREATER_EQUAL(_a, _b)                                     \
   do {                                                                         \
-    if (_a < _b){                                                              \
-      shmemu_fatal(                                                            \
-          "In %s(), argument %d is less than %d, but is requred to be greater "\
-          "or equal.",                                                         \
-          __func__, (_a), (_b));                                               \
+    if (_a < _b) {                                                             \
+      shmemu_fatal("In %s(), argument %d is less than %d, but is requred to "  \
+                   "be greater "                                               \
+                   "or equal.",                                                \
+                   __func__, (_a), (_b));                                      \
     }                                                                          \
   } while (0)
 

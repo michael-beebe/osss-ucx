@@ -51,7 +51,7 @@ static threadwrap_thread_t thr;
 static long delay_ns;
 
 /** Flag to control progress thread execution */
-static volatile bool done = false;
+static bool done = false;
 
 /** Nanoseconds per second constant */
 static const long billion = 1e9;
@@ -75,7 +75,7 @@ static void *start_progress(void *args) {
     shmemc_progress();
 
     nanosleep(&ts, NULL); /* back off */
-  } while (!done);
+  } while (!__atomic_load_n(&done, __ATOMIC_ACQUIRE));
 
   return NULL;
 }
@@ -146,6 +146,7 @@ out:
  * Checks if progress thread is required and starts it if needed.
  */
 void shmemu_progress_init(void) {
+  __atomic_store_n(&done, false, __ATOMIC_RELEASE);
   proc.progress_thread = check_if_progress_required();
 
   if (proc.progress_thread) {
@@ -171,11 +172,12 @@ void shmemu_progress_finalize(void) {
   if (proc.progress_thread) {
     int s;
 
-    done = true;
+    __atomic_store_n(&done, true, __ATOMIC_RELEASE);
 
     s = threadwrap_thread_join(thr, NULL);
     shmemu_assert(s == 0, MODULE ": could not terminate progress thread (%s)",
                   strerror(s));
+    proc.progress_thread = false;
   }
 }
 

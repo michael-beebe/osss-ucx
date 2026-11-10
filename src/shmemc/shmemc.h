@@ -448,7 +448,7 @@ SHMEMC_CTX_WAIT_UNTIL_ANY(64, ge)
 #define SHMEMC_CTX_TEST_ALL_VECTOR(_size, _opname)                             \
   int shmemc_ctx_test_all_vector_##_opname##_size(                             \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values);
+      const void *values);
 
 SHMEMC_CTX_TEST_ALL_VECTOR(16, eq)
 SHMEMC_CTX_TEST_ALL_VECTOR(32, eq)
@@ -477,7 +477,7 @@ SHMEMC_CTX_TEST_ALL_VECTOR(64, ge)
 #define SHMEMC_CTX_TEST_SOME_VECTOR(_size, _opname)                            \
   size_t shmemc_ctx_test_some_vector_##_opname##_size(                         \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, size_t *idxs,      \
-      const int *status, void *values);
+      const int *status, const void *values);
 
 SHMEMC_CTX_TEST_SOME_VECTOR(16, eq)
 SHMEMC_CTX_TEST_SOME_VECTOR(32, eq)
@@ -506,7 +506,7 @@ SHMEMC_CTX_TEST_SOME_VECTOR(64, ge)
 #define SHMEMC_CTX_TEST_ANY_VECTOR(_size, _opname)                             \
   size_t shmemc_ctx_test_any_vector_##_opname##_size(                          \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values);
+      const void *values);
 
 SHMEMC_CTX_TEST_ANY_VECTOR(16, eq)
 SHMEMC_CTX_TEST_ANY_VECTOR(32, eq)
@@ -535,7 +535,7 @@ SHMEMC_CTX_TEST_ANY_VECTOR(64, ge)
 #define SHMEMC_CTX_WAIT_UNTIL_ALL_VECTOR(_size, _opname)                       \
   void shmemc_ctx_wait_until_all_vector_##_opname##_size(                      \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values);
+      const void *values);
 
 SHMEMC_CTX_WAIT_UNTIL_ALL_VECTOR(16, eq)
 SHMEMC_CTX_WAIT_UNTIL_ALL_VECTOR(32, eq)
@@ -564,7 +564,7 @@ SHMEMC_CTX_WAIT_UNTIL_ALL_VECTOR(64, ge)
 #define SHMEMC_CTX_WAIT_UNTIL_SOME_VECTOR(_size, _opname)                      \
   size_t shmemc_ctx_wait_until_some_vector_##_opname##_size(                   \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, size_t *idxs,      \
-      const int *status, void *values);
+      const int *status, const void *values);
 
 SHMEMC_CTX_WAIT_UNTIL_SOME_VECTOR(16, eq)
 SHMEMC_CTX_WAIT_UNTIL_SOME_VECTOR(32, eq)
@@ -593,7 +593,7 @@ SHMEMC_CTX_WAIT_UNTIL_SOME_VECTOR(64, ge)
 #define SHMEMC_CTX_WAIT_UNTIL_ANY_VECTOR(_size, _opname)                       \
   size_t shmemc_ctx_wait_until_any_vector_##_opname##_size(                    \
       shmem_ctx_t ctx, int##_size##_t *vars, size_t nelems, const int *status, \
-      void *values);
+      const void *values);
 
 SHMEMC_CTX_WAIT_UNTIL_ANY_VECTOR(16, eq)
 SHMEMC_CTX_WAIT_UNTIL_ANY_VECTOR(32, eq)
@@ -626,10 +626,16 @@ SHMEMC_CTX_WAIT_UNTIL_ANY_VECTOR(64, ge)
  */
 
 shmemc_context_h *shmemc_alloc_contexts(shmemc_team_h th);
+void shmemc_contexts_finalize(void);
 int shmemc_context_create(shmemc_team_h th, long options,
                           shmemc_context_h *ctxp);
 void shmemc_context_destroy(shmem_ctx_t ctx);
 unsigned long shmemc_context_id(shmem_ctx_t ctx);
+void shmemc_ctx_session_start(shmemc_context_h ch, long options,
+                              const shmem_ctx_session_config_t *config,
+                              long config_mask);
+void shmemc_ctx_session_stop(shmemc_context_h ch);
+void shmemc_ctx_session_coalesce_flush(shmemc_context_h ch);
 
 /*
  * Special handling for default context

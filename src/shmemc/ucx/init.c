@@ -378,7 +378,9 @@ inline static void ucx_init_ready(void) {
                 UCP_FEATURE_AMO32 | /* 32-bit atomics */
                 UCP_FEATURE_AMO64;  /* 64-bit atomics */
 
-  pm.mt_workers_shared = (proc.td.osh_tl > SHMEM_THREAD_SINGLE);
+  /* Progress can run concurrently with application-created workers. */
+  pm.mt_workers_shared = (proc.td.osh_tl > SHMEM_THREAD_SINGLE ||
+                          proc.env.progress_threads != NULL);
 
   /* estimated program size */
   pm.estimated_num_eps = proc.li.nranks;

@@ -115,15 +115,15 @@ typedef struct shmemc_team {
                            NULL if predef */
 
   /* now need to add pSync arrays for collectives */
-#define SHMEMC_NUM_PSYNCS 2 /* For barrier/sync and other collectives */
+#define SHMEMC_NUM_PSYNCS 3 /* Barrier/sync, other collectives, and broadcast */
 
   // clang-format off
 /* Symbolic constants for pSync buffer indices */
 #define SHMEMC_PSYNC_BARRIER    0  /* team sync/barrier operations */
 #define SHMEMC_PSYNC_COLLECTIVE 1  /* for other collective operations */
+#define SHMEMC_PSYNC_BROADCAST  2  /* dedicated broadcast work array */
 
 /* Old symbolic constants for backward compatibility in switch statement */
-#define SHMEMC_PSYNC_BROADCAST  2  /* broadcast operations */
 #define SHMEMC_PSYNC_COLLECT    3  /* collect/fcollect operations */
 #define SHMEMC_PSYNC_ALLTOALL   4  /* alltoall/alltoalls operations */
 #define SHMEMC_PSYNC_REDUCE     5  /* reduction operations */
@@ -141,6 +141,30 @@ typedef struct shmemc_context_attr {
   bool nostore;
 } shmemc_context_attr_t;
 
+/* TODO: sweep 2^{..16}, also see breakpoints in ucx
+ *       /tuning to see if there's a magic number */
+#define SHMEMC_SESSION_COALESCE_BUF_SIZE 4096
+
+/**
+ * @brief Software RMA coalescing buffer for sessions
+ */
+typedef struct shmemc_coalesce_buf {
+  int target_pe;
+  uint64_t remote_addr;
+  size_t len;
+  uint8_t data[SHMEMC_SESSION_COALESCE_BUF_SIZE];
+} shmemc_coalesce_buf_t;
+
+/**
+ * @brief Communication session tracking state
+ */
+typedef struct shmemc_session {
+  bool is_active;
+  long options;
+  shmem_ctx_session_config_t config;
+  shmemc_coalesce_buf_t coalesce;
+} shmemc_session_t;
+
 /**
  * @brief Structure representing an OpenSHMEM context
  */
@@ -157,6 +181,8 @@ typedef struct shmemc_context {
   mem_region_access_t *racc; /* for endpoint remote access */
 
   shmemc_team_h team; /* team we belong to */
+
+  shmemc_session_t session; /* active session info and hints */
 
   /*
    * possibly other things

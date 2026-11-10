@@ -15,6 +15,8 @@
 #include "threading.h"
 
 #include <pthread.h>
+#include <stdlib.h>
+#include <errno.h>
 
 /** Type alias for pthread mutex */
 typedef pthread_mutex_t thr_mutex_t;
@@ -26,9 +28,18 @@ typedef pthread_mutex_t thr_mutex_t;
  * @return 0 on success, non-zero on error
  */
 int threadwrap_mutex_init(threadwrap_mutex_t *mp) {
-  thr_mutex_t *tp = (thr_mutex_t *)mp;
+  thr_mutex_t *tp = (thr_mutex_t *)malloc(sizeof(*tp));
+  if (tp == NULL) {
+    return ENOMEM;
+  }
 
-  return pthread_mutex_init(tp, NULL);
+  int status = pthread_mutex_init(tp, NULL);
+  if (status != 0) {
+    free(tp);
+    return status;
+  }
+  *mp = tp;
+  return 0;
 }
 
 /**
@@ -38,9 +49,14 @@ int threadwrap_mutex_init(threadwrap_mutex_t *mp) {
  * @return 0 on success, non-zero on error
  */
 int threadwrap_mutex_destroy(threadwrap_mutex_t *mp) {
-  thr_mutex_t *tp = (thr_mutex_t *)mp;
+  thr_mutex_t *tp = (thr_mutex_t *)*mp;
 
-  return pthread_mutex_destroy(tp);
+  int status = pthread_mutex_destroy(tp);
+  if (status == 0) {
+    free(tp);
+    *mp = NULL;
+  }
+  return status;
 }
 
 /**
@@ -50,7 +66,7 @@ int threadwrap_mutex_destroy(threadwrap_mutex_t *mp) {
  * @return 0 on success, non-zero on error
  */
 int threadwrap_mutex_lock(threadwrap_mutex_t *mp) {
-  thr_mutex_t *tp = (thr_mutex_t *)mp;
+  thr_mutex_t *tp = (thr_mutex_t *)*mp;
 
   return pthread_mutex_lock(tp);
 }
@@ -62,7 +78,7 @@ int threadwrap_mutex_lock(threadwrap_mutex_t *mp) {
  * @return 0 on success, non-zero on error
  */
 int threadwrap_mutex_unlock(threadwrap_mutex_t *mp) {
-  thr_mutex_t *tp = (thr_mutex_t *)mp;
+  thr_mutex_t *tp = (thr_mutex_t *)*mp;
 
   return pthread_mutex_unlock(tp);
 }
@@ -74,7 +90,7 @@ int threadwrap_mutex_unlock(threadwrap_mutex_t *mp) {
  * @return 0 on success, non-zero on error or if mutex is already locked
  */
 int threadwrap_mutex_trylock(threadwrap_mutex_t *mp) {
-  thr_mutex_t *tp = (thr_mutex_t *)mp;
+  thr_mutex_t *tp = (thr_mutex_t *)*mp;
 
   return pthread_mutex_trylock(tp);
 }

@@ -360,8 +360,8 @@ uint64_t shmem_signal_fetch(const uint64_t *sig_addr) {
 }
 
 #ifdef ENABLE_PSHMEM
-#pragma weak shmem_signal_ctx_set = pshmem_signal_ctx_set
-#define shmem_signal_ctx_set pshmem_signal_ctx_set
+#pragma weak shmem_ctx_signal_set = pshmem_ctx_signal_set
+#define shmem_ctx_signal_set pshmem_ctx_signal_set
 #pragma weak shmem_signal_set = pshmem_signal_set
 #define shmem_signal_set pshmem_signal_set
 #endif /* ENABLE_PSHMEM */
@@ -407,8 +407,8 @@ void shmem_signal_set(uint64_t *sig_addr, uint64_t signal,
 }
 
 #ifdef ENABLE_PSHMEM
-#pragma weak shmem_signal_ctx_add = pshmem_signal_ctx_add
-#define shmem_signal_ctx_add pshmem_signal_ctx_add
+#pragma weak shmem_ctx_signal_add = pshmem_ctx_signal_add
+#define shmem_ctx_signal_add pshmem_ctx_signal_add
 #pragma weak shmem_signal_add = pshmem_signal_add
 #define shmem_signal_add pshmem_signal_add
 #endif /* ENABLE_PSHMEM */

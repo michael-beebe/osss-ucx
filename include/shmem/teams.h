@@ -5,6 +5,10 @@
 
 #include <shmem/defs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @file teams.h
  * @brief OpenSHMEM teams API
@@ -136,5 +140,9 @@ int shmem_team_sync(shmem_team_t team);
  * @return Local pointer to remote data object
  */
 void *shmem_team_ptr(shmem_team_t team, const void *dest, int pe) _WUR;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ! _SHMEM_API_TEAMS_H */

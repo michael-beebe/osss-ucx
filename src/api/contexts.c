@@ -25,6 +25,10 @@
 #define shmem_ctx_create pshmem_ctx_create
 #pragma weak shmem_ctx_destroy = pshmem_ctx_destroy
 #define shmem_ctx_destroy pshmem_ctx_destroy
+#pragma weak shmem_ctx_session_start = pshmem_ctx_session_start
+#define shmem_ctx_session_start pshmem_ctx_session_start
+#pragma weak shmem_ctx_session_stop = pshmem_ctx_session_stop
+#define shmem_ctx_session_stop pshmem_ctx_session_stop
 #endif /* ENABLE_PSHMEM */
 
 /*
@@ -76,34 +80,65 @@ void shmem_ctx_destroy(shmem_ctx_t ctx) {
   logger(LOG_CONTEXTS, "%s(ctx=%p)", __func__, ctx);
 }
 
-#ifdef ENABLE_EXPERIMENTAL
-
 /**
- * @brief Signal the start of a communication session
+ * @brief Start a communication session on a context
  *
- * @param ctx Context for the communication session
- *
- * Notifies OpenSHMEM that a region of communication operations is beginning.
- * This is an experimental feature.
+ * @param ctx Context handle
+ * @param options Session hint options
+ * @param config Pointer to session configuration parameters
+ * @param config_mask Bitwise mask of configuration parameters
  */
-void shmemx_ctx_session_start(shmem_ctx_t ctx) {
-  NO_WARN_UNUSED(ctx);
-
+void shmem_ctx_session_start(shmem_ctx_t ctx, long options,
+                             const shmem_ctx_session_config_t *config,
+                             long config_mask) {
   SHMEMU_CHECK_INIT();
+
+  if (ctx == SHMEM_CTX_INVALID) {
+    return;
+  }
+
+  SHMEMT_MUTEX_PROTECT(shmemc_ctx_session_start((shmemc_context_h)ctx, options,
+                                                config, config_mask));
+
+  logger(LOG_CONTEXTS, "%s(ctx=%p, options=%#lx, config_mask=%#lx)", __func__,
+         ctx, options, config_mask);
 }
 
 /**
- * @brief Signal the end of a communication session
+ * @brief Stop a communication session on a context
+ *
+ * @param ctx Context handle
+ */
+void shmem_ctx_session_stop(shmem_ctx_t ctx) {
+  SHMEMU_CHECK_INIT();
+
+  if (ctx == SHMEM_CTX_INVALID) {
+    return;
+  }
+
+  SHMEMT_MUTEX_PROTECT(shmemc_ctx_session_stop((shmemc_context_h)ctx));
+
+  logger(LOG_CONTEXTS, "%s(ctx=%p)", __func__, ctx);
+}
+
+#ifdef ENABLE_EXPERIMENTAL
+
+/**
+ * @brief Signal the start of a communication session (experimental)
  *
  * @param ctx Context for the communication session
- *
- * Notifies OpenSHMEM that a region of communication operations is ending.
- * This is an experimental feature.
  */
-void shmemx_ctx_session_estop(shmem_ctx_t ctx) {
-  NO_WARN_UNUSED(ctx);
+void shmemx_ctx_session_start(shmem_ctx_t ctx) {
+  shmem_ctx_session_start(ctx, 0, NULL, 0);
+}
 
-  SHMEMU_CHECK_INIT();
+/**
+ * @brief Signal the end of a communication session (experimental)
+ *
+ * @param ctx Context for the communication session
+ */
+void shmemx_ctx_session_stop(shmem_ctx_t ctx) {
+  shmem_ctx_session_stop(ctx);
 }
 
 #endif /* ENABLE_EXPERIMENTAL */

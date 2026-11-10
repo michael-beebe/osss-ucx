@@ -20,6 +20,10 @@
 #include <string.h>
 #include <math.h>
 
+#if SHCOLL_BCAST_SYNC_SIZE + SHCOLL_BARRIER_SYNC_SIZE > SHMEM_BCAST_SYNC_SIZE
+#error "Team broadcast work array is too small for its reuse rendezvous"
+#endif
+
 /** Default tree degree for broadcast operations */
 static int tree_degree_broadcast = 2;
 
@@ -101,7 +105,7 @@ broadcast_helper_complete_tree(void *target, const void *source, size_t nbytes,
                               &node);
 
   /* Wait for the data form the parent */
-  if (PE_root != me) {
+  if (PE_root != me_as) {
     shmem_long_wait_until(pSync, SHMEM_CMP_NE, SHCOLL_SYNC_VALUE);
     source = target;
 
@@ -127,7 +131,7 @@ broadcast_helper_complete_tree(void *target, const void *source, size_t nbytes,
 
     shmem_long_wait_until(pSync, SHMEM_CMP_EQ,
                           SHCOLL_SYNC_VALUE + node.children_num +
-                              (PE_root == me ? 0 : 1));
+                              (PE_root == me_as ? 0 : 1));
   }
 
   shmem_long_p(pSync, SHCOLL_SYNC_VALUE, me);
@@ -339,7 +343,7 @@ broadcast_helper_scatter_collect(void *target, const void *source,
 
   const int me = shmem_my_pe();
   const int stride = 1 << logPE_stride;
-  int root_as = (PE_root - PE_start) / stride;
+  int root_as = PE_root;
   /* Get my index in the active set */
   int me_as = (me - PE_start) / stride;
 
@@ -506,6 +510,31 @@ SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 32)
 SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 64)
 
 /**
+ * @brief Prepare a team's broadcast work array for the next call.
+ *
+ * The legacy helpers acknowledge receipt before their entire subtree finishes.
+ * Wait until every member has entered this call before reusing their counters,
+ * including when the root or algorithm changes. The rendezvous has separate
+ * counters, and the broadcast array is independent of other team collectives.
+ * Each caller completes its helper's cleanup with shmem_quiet() before
+ * returning; neither helper nor wrapper may clear the rendezvous counters
+ * afterwards.
+ *
+ * @param team_h Team participating in the broadcast
+ * @return Symmetric work array for the broadcast helper
+ */
+static long *broadcast_team_begin(shmemc_team_h team_h) {
+  long *psync = shmemc_team_get_psync(team_h, SHMEMC_PSYNC_BROADCAST);
+  SHMEMU_CHECK_NULL(psync, "team_h->pSyncs[BROADCAST]");
+
+  shcoll_sync_binomial_tree(
+      team_h->start,
+      (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,
+      team_h->nranks, psync + SHCOLL_BCAST_SYNC_SIZE);
+  return psync;
+}
+
+/**
  * @brief Macro for typed broadcast implementations using the team's pSync
  */
 #define SHCOLL_BROADCAST_TYPE_DEFINITION(_algo, _type, _typename)              \
@@ -524,8 +553,7 @@ SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 64)
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, sizeof(_type) * nelems,          \
                                 sizeof(_type) * nelems);                       \
                                                                                \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
-                      "team_h->pSyncs[COLLECTIVE]");                           \
+    long *psync = broadcast_team_begin(team_h);                                \
                                                                                \
     /* Initialize dest: root PE copies source, others leave dest as-is */      \
     /* The broadcast operation will overwrite dest on all PEs */               \
@@ -536,10 +564,9 @@ SHCOLL_BROADCAST_SIZE_DEFINITION(scatter_collect, 64)
     broadcast_helper_##_algo(                                                  \
         dest, source, nelems * sizeof(_type), PE_root, team_h->start,          \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
-        team_h->nranks,                                                        \
-        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
+        team_h->nranks, psync);                                                \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
+    shmem_quiet();                                                             \
                                                                                \
     return 0;                                                                  \
   }
@@ -571,8 +598,7 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_BROADCAST_TYPES)
     SHMEMU_CHECK_SYMMETRIC(dest, nelems * team_h->nranks);                     \
     SHMEMU_CHECK_SYMMETRIC(source, nelems * team_h->nranks);                   \
     SHMEMU_CHECK_BUFFER_OVERLAP(dest, source, nelems, nelems);                 \
-    SHMEMU_CHECK_NULL(shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE),  \
-                      "team_h->pSyncs[COLLECTIVE]");                           \
+    long *psync = broadcast_team_begin(team_h);                                \
                                                                                \
     /* Initialize dest: root PE copies source, others leave dest as-is */      \
     /* The broadcast operation will overwrite dest on all PEs */               \
@@ -582,10 +608,9 @@ SHMEM_STANDARD_RMA_TYPE_TABLE(DEFINE_BROADCAST_TYPES)
     broadcast_helper_##_algo(                                                  \
         dest, source, nelems, PE_root, team_h->start,                          \
         (team_h->stride > 0) ? (int)log2((double)team_h->stride) : 0,          \
-        team_h->nranks,                                                        \
-        shmemc_team_get_psync(team_h, SHMEMC_PSYNC_COLLECTIVE));               \
+        team_h->nranks, psync);                                                \
                                                                                \
-    shmemc_team_reset_psync(team_h, SHMEMC_PSYNC_COLLECTIVE);                  \
+    shmem_quiet();                                                             \
                                                                                \
     return 0;                                                                  \
   }

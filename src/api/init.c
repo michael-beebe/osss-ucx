@@ -38,6 +38,8 @@
 #define shmem_init pshmem_init
 #pragma weak shmem_finalize = pshmem_finalize
 #define shmem_finalize pshmem_finalize
+#pragma weak shmem_query_initialized = pshmem_query_initialized
+#define shmem_query_initialized pshmem_query_initialized
 #endif /* ENABLE_PSHMEM */
 
 /*
@@ -51,11 +53,12 @@
  * including thread management, communications, collectives, and other
  * subsystems.
  */
-static void finalize_helper(void) {
+static void finalize_helper(bool at_exit) {
   threadwrap_thread_t this;
+  const int references = __atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE);
 
   /* do nothing if multiple finalizes */
-  if (proc.refcount < 1) {
+  if (references < 1) {
     return;
   }
 
@@ -71,6 +74,12 @@ static void finalize_helper(void) {
   /* implicit barrier on finalize */
   shmem_barrier_all();
 
+  /* Intermediate finalizes are barriers and keep the runtime usable. */
+  if (!at_exit && references > 1) {
+    __atomic_sub_fetch(&proc.refcount, 1, __ATOMIC_RELEASE);
+    return;
+  }
+
   shmemu_progress_finalize();
 
   shmemc_finalize();
@@ -82,9 +91,16 @@ static void finalize_helper(void) {
   shmemxa_finalize();
 #endif /* ENABLE_EXPERIMENTAL */
 
-  --proc.refcount;
   proc.status = SHMEMC_PE_SHUTDOWN;
+  __atomic_store_n(&proc.refcount, 0, __ATOMIC_RELEASE);
 }
+
+/** @brief Release the active generation on process exit, regardless of nesting.
+ */
+static void finalize_at_exit(void) { finalize_helper(true); }
+
+/** Register the process exit handler once, across all runtime generations. */
+static bool exit_handler_registered = false;
 
 /**
  * @brief Helper function to initialize the OpenSHMEM library with threading
@@ -100,25 +116,16 @@ static void finalize_helper(void) {
 inline static int init_thread_helper(int requested, int *provided) {
   int s;
 
-  /* do nothing if multiple inits */
-  if (proc.refcount > 0) {
+  /* Retain the established thread support for nested initialization calls. */
+  if (__atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE) > 0) {
+    if (provided != NULL) {
+      *provided = proc.td.osh_tl;
+    }
+    __atomic_add_fetch(&proc.refcount, 1, __ATOMIC_RELEASE);
     return 0;
   }
 
-  /* set up comms, read environment */
-  shmemc_init();
-  /* utiltiies */
-  shmemt_init();
-  shmemu_init();
-  collectives_init();
-
-#ifdef ENABLE_ALIGNED_ADDRESSES
-  shmemu_test_asr_mismatch();
-#endif /* ENABLE_ALIGNED_ADDRESSES */
-
-  shmemu_progress_init();
-
-  /* save and return thread level */
+  /* UCX setup must see the thread level of this generation. */
 #ifdef ENABLE_THREADS
   switch (requested) {
   case SHMEM_THREAD_SINGLE:
@@ -137,26 +144,41 @@ inline static int init_thread_helper(int requested, int *provided) {
   proc.td.osh_tl = SHMEM_THREAD_SINGLE;
 #endif /* ENABLE_THREADS */
 
+  proc.td.invoking_thread = threadwrap_thread_id();
+
+  /* set up comms, read environment */
+  shmemc_init();
+  shmemt_init();
+  shmemu_init();
+  collectives_init();
+
+#ifdef ENABLE_ALIGNED_ADDRESSES
+  shmemu_test_asr_mismatch();
+#endif /* ENABLE_ALIGNED_ADDRESSES */
+
+  shmemu_progress_init();
+
   if (provided != NULL) {
     *provided = proc.td.osh_tl;
   }
-
-  proc.td.invoking_thread = threadwrap_thread_id();
 
 #ifdef ENABLE_EXPERIMENTAL
   shmemxa_init(proc.heaps.nheaps);
 #endif /* ENABLE_EXPERIMENTAL */
 
-  s = atexit(finalize_helper);
-  if (s != 0) {
-    shmemu_fatal(MODULE ": unable to register atexit() handler: %s",
-                 strerror(errno));
-    /* NOT REACHED */
+  if (!exit_handler_registered) {
+    s = atexit(finalize_at_exit);
+    if (s != 0) {
+      shmemu_fatal(MODULE ": unable to register atexit() handler: %s",
+                   strerror(errno));
+      /* NOT REACHED */
+    }
+    exit_handler_registered = true;
   }
 
   proc.status = SHMEMC_PE_RUNNING;
 
-  ++proc.refcount;
+  __atomic_add_fetch(&proc.refcount, 1, __ATOMIC_RELEASE);
 
   if (shmemc_my_pe() == 0) {
     if (proc.env.print_version) {
@@ -185,10 +207,10 @@ inline static int init_thread_helper(int requested, int *provided) {
 /**
  * @brief Finalize the OpenSHMEM library
  *
- * This routine releases all resources used by the OpenSHMEM library.
- * It must be the last OpenSHMEM routine called in a program.
+ * Every call is collective. Only the final matching call releases resources;
+ * subsequent initialization starts a fresh OpenSHMEM generation.
  */
-void shmem_finalize(void) { finalize_helper(); }
+void shmem_finalize(void) { finalize_helper(false); }
 
 /**
  * @brief Initialize the OpenSHMEM library with threading support
@@ -210,6 +232,17 @@ int shmem_init_thread(int requested, int *provided) {
  */
 void shmem_init(void) { (void)init_thread_helper(SHMEM_THREAD_SINGLE, NULL); }
 
+/**
+ * @brief Reports initialization status without using initialized subsystems.
+ * @param[out] initialized Nonzero while the library is initialized.
+ *
+ * Atomic access permits queries from any thread, including before the mutex,
+ * logger, or communications layer has been initialized.
+ */
+void shmem_query_initialized(int *initialized) {
+  *initialized = __atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE) > 0;
+}
+
 #ifdef PR470
 
 /**
@@ -217,13 +250,17 @@ void shmem_init(void) { (void)init_thread_helper(SHMEM_THREAD_SINGLE, NULL); }
  *
  * @return Non-zero if initialized, 0 otherwise
  */
-int shmem_initialized(void) { return proc.refcount > 0; }
+int shmem_initialized(void) {
+  return __atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE) > 0;
+}
 
 /**
  * @brief Check if OpenSHMEM library is finalized
  *
  * @return Non-zero if finalized, 0 otherwise
  */
-int shmem_finalized(void) { return proc.refcount < 1; }
+int shmem_finalized(void) {
+  return __atomic_load_n(&proc.refcount, __ATOMIC_ACQUIRE) < 1;
+}
 
 #endif /* PR470 */

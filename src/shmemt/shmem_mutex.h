@@ -26,9 +26,9 @@ void shmemt_init(void);
 /**
  * @brief Finalize the threading subsystem
  *
- * No-op since there's no shutdown work needed
+ * Destroy the communications mutex for the current generation.
  */
-inline static void shmemt_finalize(void) {}
+void shmemt_finalize(void);
 
 /**
  * @brief Initialize mutex for thread synchronization
@@ -75,6 +75,7 @@ void shmemt_mutex_unlock(void);
 #else
 
 #define shmemt_init()
+#define shmemt_finalize()
 
 #define SHMEMT_MUTEX_PROTECT(_fn) _fn
 #define SHMEMT_MUTEX_NOPROTECT(_fn) _fn

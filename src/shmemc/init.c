@@ -85,6 +85,7 @@ void shmemc_init(void) {
  */
 void shmemc_finalize(void) {
   shmemc_teams_finalize();
+  shmemc_contexts_finalize();
 
   shmemc_ucx_context_default_destroy();
 

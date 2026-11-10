@@ -110,3 +110,45 @@ AS_IF([test "x$with_launcher" != "x"],
 	 AC_SUBST([SHMEM_LAUNCHER], [$with_launcher])]
 	 )
 AM_CONDITIONAL([SHMEM_LAUNCHER], [test "x$with_launcher" != "x"])
+
+#
+# Session Optimizations (for ablation study)
+#
+
+AC_ARG_ENABLE([session-no-progress],
+    AS_HELP_STRING([--enable-session-no-progress],
+                   [Unavailable: No supported UCX no-progress mechanism has been implemented]))
+AS_IF([test "x$enable_session_no_progress" != "x" &&
+       test "x$enable_session_no_progress" != "xno"],
+      [AC_MSG_ERROR([--enable-session-no-progress: No supported UCX no-progress mechanism has been implemented])])
+
+AC_ARG_ENABLE([session-deferred-flush],
+    AS_HELP_STRING([--enable-session-deferred-flush],
+                   [Unavailable: Deferred blocking puts require owned buffers and completion tracking]))
+AS_IF([test "x$enable_session_deferred_flush" != "x" &&
+       test "x$enable_session_deferred_flush" != "xno"],
+      [AC_MSG_ERROR([--enable-session-deferred-flush: Deferred blocking puts require owned buffers and completion tracking])])
+
+AC_ARG_ENABLE([session-lock-elision],
+    AS_HELP_STRING([--enable-session-lock-elision],
+                   [Unavailable: No session-specific lock elision has been implemented]))
+AS_IF([test "x$enable_session_lock_elision" != "x" &&
+       test "x$enable_session_lock_elision" != "xno"],
+      [AC_MSG_ERROR([--enable-session-lock-elision: No session-specific lock elision has been implemented])])
+
+AC_ARG_ENABLE([session-coalescing],
+	AS_HELP_STRING([--enable-session-coalescing],
+			[Enable software RMA write coalescing buffer during sessions @<:@default=no@:>@]))
+AS_IF([test "x$enable_session_coalescing" = "xyes"],
+	[AC_DEFINE([ENABLE_SESSION_COALESCING], [1], [Enable software write coalescing during sessions])
+	 AC_SUBST([ENABLE_SESSION_COALESCING], [1])],
+	[AC_SUBST([ENABLE_SESSION_COALESCING], [0])]
+	)
+AM_CONDITIONAL([ENABLE_SESSION_COALESCING], [test "x$enable_session_coalescing" = "xyes"])
+
+AC_ARG_ENABLE([session-prealloc],
+    AS_HELP_STRING([--enable-session-prealloc],
+                   [Unavailable: No session descriptor queue exists to preallocate]))
+AS_IF([test "x$enable_session_prealloc" != "x" &&
+       test "x$enable_session_prealloc" != "xno"],
+      [AC_MSG_ERROR([--enable-session-prealloc: No session descriptor queue exists to preallocate])])
